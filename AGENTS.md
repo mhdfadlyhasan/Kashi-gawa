@@ -77,7 +77,8 @@ Each `WordToken` is wrapped in a square box. Colors indicate part-of-speech:
 | Blue | `border-blue-400 bg-blue-100` | 名詞 (noun), 代名詞 (pronoun), 固有名詞 (proper noun) |
 | Yellow | `border-yellow-400 bg-yellow-100` | 助詞 (particle) |
 | Green | `border-green-400 bg-green-100` | 動詞 (verb) — transitive/intransitive distinction deferred to later phase |
-| Default (subtle gray) | `border-gray-200 bg-gray-50` | Everything else (adjectives, adverbs, etc.) |
+| Red | `border-red-400 bg-red-100` | 形容詞 (i-adjective), 形容動詞 (na-adjective) |
+| Default (subtle gray) | `border-gray-200 bg-gray-50` | Everything else (adverbs, etc.) |
 
 ## Breakdown Modal Content
 

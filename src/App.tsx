@@ -181,7 +181,16 @@ function App() {
                 </button>
               </div>
               {tokens.length > 0 ? (
-                <LyricDisplay lines={tokens} readingMode={readingMode} />
+                <LyricDisplay
+                  lines={tokens}
+                  readingMode={readingMode}
+                  onTokensChange={(newLines) => {
+                    setTokens(newLines);
+                    if (activeId) {
+                      updateTokens(activeId, newLines);
+                    }
+                  }}
+                />
               ) : (
                 <div className="text-gray-400">Parsing lyrics...</div>
               )}

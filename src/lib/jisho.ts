@@ -11,13 +11,27 @@ interface CompactEntry {
   meanings: string[];
 }
 
-let jmdictPromise: Promise<Record<string, CompactEntry>> | null = null;
+interface JmdictIndex {
+  byWord: Record<string, CompactEntry>;
+  byReading: Record<string, CompactEntry>;
+}
 
-function loadJmdict(): Promise<Record<string, CompactEntry>> {
+let jmdictPromise: Promise<JmdictIndex> | null = null;
+
+function loadJmdict(): Promise<JmdictIndex> {
   if (!jmdictPromise) {
     jmdictPromise = fetch(import.meta.env.BASE_URL + 'dict/jmdict-common.json')
       .then((res) => res.json())
-      .catch(() => ({}));
+      .then((data: Record<string, CompactEntry>) => {
+        const byReading: Record<string, CompactEntry> = {};
+        for (const entry of Object.values(data)) {
+          if (entry.reading && entry.reading !== entry.word) {
+            byReading[entry.reading] = entry;
+          }
+        }
+        return { byWord: data, byReading };
+      })
+      .catch(() => ({ byWord: {}, byReading: {} }));
   }
   return jmdictPromise;
 }
@@ -25,7 +39,7 @@ function loadJmdict(): Promise<Record<string, CompactEntry>> {
 export async function searchJisho(word: string): Promise<JishoResult | null> {
   // 1. Check JMDict common-only dictionary (~22k words, loaded from JSON)
   const jmdict = await loadJmdict();
-  const jmEntry = jmdict[word];
+  const jmEntry = jmdict.byWord[word] || jmdict.byReading[word];
   if (jmEntry) {
     return {
       japanese: [{ word: jmEntry.word, reading: jmEntry.reading }],
