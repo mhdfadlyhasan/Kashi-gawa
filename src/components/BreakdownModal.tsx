@@ -109,6 +109,15 @@ export const BreakdownModal: React.FC<BreakdownModalProps> = ({
                   </div>
                 )}
               </div>
+
+              <a
+                href={`https://jisho.org/search/${encodeURIComponent(breakdown.dictionaryForm)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block w-full text-center py-2 px-4 rounded-lg border border-blue-300 bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors text-sm font-medium"
+              >
+                Search in Jisho ↗
+              </a>
             </div>
           ) : (
             <div className="text-center text-gray-400 py-8">Loading...</div>
