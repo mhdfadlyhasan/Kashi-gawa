@@ -10,6 +10,7 @@ import { SongLibrary } from './components/SongLibrary';
 import { LyricDisplay } from './components/LyricDisplay';
 import { ReadingModeToggle } from './components/ReadingModeToggle';
 import { WelcomeModal } from './components/WelcomeModal';
+import { ToastContainer } from './components/ToastContainer';
 import { kanaToRomaji } from './lib/kana';
 
 function tokensToRomaji(tokens: Token[]): string {
@@ -266,6 +267,7 @@ function App() {
       </div>
 
       {isFirstVisit && <WelcomeModal onClose={markSeen} />}
+      <ToastContainer />
     </div>
   );
 }

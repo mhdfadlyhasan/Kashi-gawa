@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { showToast } from '../lib/toast';
 import { Token } from '../types';
 
 let kuromoji: any = null;
@@ -56,17 +57,21 @@ async function patchBrowserDictionaryLoader() {
 
 export function loadKuromoji(): Promise<any> {
   if (tokenizer) return Promise.resolve(tokenizer);
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     patchBrowserDictionaryLoader().then(() => {
       import('kuromoji').then((k) => {
         kuromoji = k;
         const dicPath = (import.meta as any).env.BASE_URL + 'dict';
-        kuromoji.builder({ dicPath }).build((_err: any, t: any) => {
+        kuromoji.builder({ dicPath }).build((err: any, t: any) => {
+          if (err) {
+            reject(err);
+            return;
+          }
           tokenizer = t;
           resolve(tokenizer);
         });
-      });
-    });
+      }).catch(reject);
+    }).catch(reject);
   });
 }
 
@@ -180,7 +185,12 @@ export function useTokenizer() {
   useEffect(() => {
     if (initRef.current) return;
     initRef.current = true;
-    loadKuromoji().then(() => setReady(true));
+    loadKuromoji()
+      .then(() => setReady(true))
+      .catch((err) => {
+        const message = err instanceof Error ? err.message : 'Unknown error';
+        showToast(`Tokenizer failed to load — ${message}`);
+      });
   }, []);
 
   const tokenize = useCallback(async (text: string): Promise<Token[]> => {

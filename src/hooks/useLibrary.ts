@@ -1,16 +1,28 @@
 import { useState, useEffect, useCallback } from 'react';
+import { showToast } from '../lib/toast';
 import { LibraryItem, Token } from '../types';
 
 const STORAGE_KEY = 'kashi-gawa-library';
 
 function loadLibrary(): LibraryItem[] {
-  const raw = localStorage.getItem(STORAGE_KEY);
-  if (!raw) return [];
-  return JSON.parse(raw) as LibraryItem[];
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    return JSON.parse(raw) as LibraryItem[];
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    showToast(`Failed to load library — ${message}`);
+    return [];
+  }
 }
 
 function saveLibrary(items: LibraryItem[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    showToast(`Failed to save library — ${message}`);
+  }
 }
 
 export function useLibrary() {

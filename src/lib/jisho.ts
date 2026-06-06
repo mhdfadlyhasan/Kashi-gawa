@@ -1,3 +1,4 @@
+import { showToast } from '../lib/toast';
 import { CORE1000_DICT } from './core1000Dict';
 
 export interface JishoResult {
@@ -21,7 +22,12 @@ let jmdictPromise: Promise<JmdictIndex> | null = null;
 function loadJmdict(): Promise<JmdictIndex> {
   if (!jmdictPromise) {
     jmdictPromise = fetch(import.meta.env.BASE_URL + 'dict/jmdict-common.json')
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error(`Dictionary fetch failed: ${res.status}`);
+        }
+        return res.json();
+      })
       .then((data: Record<string, CompactEntry>) => {
         const byReading: Record<string, CompactEntry> = {};
         for (const entry of Object.values(data)) {
@@ -31,7 +37,11 @@ function loadJmdict(): Promise<JmdictIndex> {
         }
         return { byWord: data, byReading };
       })
-      .catch(() => ({ byWord: {}, byReading: {} }));
+      .catch((err) => {
+        const message = err instanceof Error ? err.message : 'Unknown error';
+        showToast(`Dictionary load failed — ${message}`);
+        return { byWord: {}, byReading: {} };
+      });
   }
   return jmdictPromise;
 }
@@ -131,6 +141,9 @@ export async function searchJisho(word: string): Promise<JishoResult | null> {
     const res = await fetch(
       `https://jlpt-vocab-api.vercel.app/api/words?word=${encodeURIComponent(word)}`
     );
+    if (!res.ok) {
+      throw new Error(`JLPT API failed: ${res.status}`);
+    }
     const data = await res.json();
     if (!data.words || data.words.length === 0) {
       // Try deconjugated forms against API as well
@@ -138,6 +151,7 @@ export async function searchJisho(word: string): Promise<JishoResult | null> {
         const deRes = await fetch(
           `https://jlpt-vocab-api.vercel.app/api/words?word=${encodeURIComponent(form)}`
         );
+        if (!deRes.ok) continue;
         const deData = await deRes.json();
         if (deData.words && deData.words.length > 0) {
           const first = deData.words[0];
@@ -164,7 +178,9 @@ export async function searchJisho(word: string): Promise<JishoResult | null> {
         },
       ],
     };
-  } catch {
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    showToast(`Dictionary lookup failed — ${message}`);
     // continue to next fallback
   }
 
@@ -173,7 +189,9 @@ export async function searchJisho(word: string): Promise<JishoResult | null> {
     const res = await fetch(
       `https://en.wiktionary.org/api/rest_v1/page/definition/${encodeURIComponent(word)}`
     );
-    if (!res.ok) return null;
+    if (!res.ok) {
+      throw new Error(`Wiktionary failed: ${res.status}`);
+    }
     const data = await res.json();
     const jaEntries = data.ja;
     if (!jaEntries || jaEntries.length === 0) return null;
@@ -198,7 +216,9 @@ export async function searchJisho(word: string): Promise<JishoResult | null> {
       japanese: [{ word, reading: '' }],
       senses,
     };
-  } catch {
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    showToast(`Wiktionary fallback failed — ${message}`);
     return null;
   }
 }

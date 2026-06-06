@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { showToast } from '../lib/toast';
 import { LrcLibTrack } from '../types';
 import { searchTracks, getTrackById } from '../lib/lrclib';
 
@@ -10,18 +11,31 @@ export function useLyrics() {
 
   const search = useCallback(async (query: string) => {
     setIsLoading(true);
-    const tracks = await searchTracks(query);
-    setResults(tracks);
-    setIsLoading(false);
+    try {
+      const tracks = await searchTracks(query);
+      setResults(tracks);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      showToast(`Search failed — ${message}`);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
 
   const selectTrack = useCallback(async (id: number) => {
     setIsSelecting(true);
-    const track = await getTrackById(id);
-    setCurrentTrack(track);
-    setResults([]);
-    setIsSelecting(false);
-    return track;
+    try {
+      const track = await getTrackById(id);
+      setCurrentTrack(track);
+      setResults([]);
+      return track;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      showToast(`Failed to select song — ${message}`);
+      return null;
+    } finally {
+      setIsSelecting(false);
+    }
   }, []);
 
   const clearResults = useCallback(() => {
