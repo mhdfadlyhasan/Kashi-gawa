@@ -24,22 +24,22 @@ export const CompactBreakdown: React.FC<CompactBreakdownProps> = ({
     <div className="sticky top-0 z-20 bg-white border border-gray-300 rounded-lg shadow-lg p-3 md:p-4 mb-4 relative overflow-hidden">
       <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-400 rounded-l-lg" />
       <div className="flex items-start justify-between gap-2 pl-2">
-        <div className="flex items-center gap-2 md:gap-4 flex-wrap min-w-0">
-          <div className="text-xl md:text-2xl font-bold text-gray-900">
+        <div className="flex items-center gap-2 md:gap-4 flex-nowrap overflow-x-auto min-w-0">
+          <div className="text-xl md:text-2xl font-bold text-gray-900 whitespace-nowrap flex-shrink-0">
             {token.surface_form}
           </div>
           {displayedReading && (
-            <div className="text-sm text-gray-500">{displayedReading}</div>
-          )}
-          {breakdown?.grammarExplanation && (
-            <div className="text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded px-2 py-0.5">
-              {breakdown.grammarExplanation}
-            </div>
+            <div className="text-sm text-gray-500 whitespace-nowrap flex-shrink-0">{displayedReading}</div>
           )}
           {breakdown?.dictionaryForm && breakdown.dictionaryForm !== token.surface_form && (
-            <div className="text-sm text-gray-700">
+            <div className="text-sm text-gray-700 whitespace-nowrap flex-shrink-0">
               <span className="text-xs text-gray-400 uppercase mr-1">Dict</span>
               {breakdown.dictionaryForm}
+            </div>
+          )}
+          {breakdown?.grammarExplanation && (
+            <div className="text-xs text-gray-500 bg-gray-50 border border-gray-200 rounded px-2 py-0.5 whitespace-nowrap flex-shrink-0">
+              {breakdown.grammarExplanation}
             </div>
           )}
         </div>
