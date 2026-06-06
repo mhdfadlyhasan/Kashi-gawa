@@ -147,7 +147,7 @@ function App() {
   return (
     <div className="h-screen w-full flex flex-col bg-gray-50 overflow-hidden">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 px-4 py-3 md:px-6 md:py-4 flex items-center gap-2 md:gap-4 shadow-sm z-10">
+      <header className="bg-white border-b border-gray-200 px-4 py-3 md:px-6 md:py-4 flex items-center gap-2 md:gap-4 shadow-sm relative z-30">
         <button
           className="md:hidden p-1.5 rounded-lg hover:bg-gray-100 transition"
           onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -181,14 +181,14 @@ function App() {
         {/* Mobile sidebar overlay */}
         {sidebarOpen && (
           <div
-            className="fixed inset-0 bg-black/50 z-10 md:hidden"
+            className="fixed inset-0 bg-black/50 z-30 md:hidden"
             onClick={() => setSidebarOpen(false)}
           />
         )}
 
         {/* Sidebar */}
         <aside
-          className={`bg-white border-r border-gray-200 flex-shrink-0 overflow-hidden fixed inset-y-0 left-0 z-20 w-64 transform transition-transform duration-200 ease-in-out md:static md:translate-x-0 ${
+          className={`bg-white border-r border-gray-200 flex-shrink-0 overflow-hidden fixed inset-y-0 left-0 z-40 md:z-20 w-64 transform transition-transform duration-200 ease-in-out md:static md:translate-x-0 ${
             sidebarOpen ? 'translate-x-0' : '-translate-x-full'
           }`}
         >
