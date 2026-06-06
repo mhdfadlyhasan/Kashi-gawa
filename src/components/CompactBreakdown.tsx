@@ -53,7 +53,7 @@ export const CompactBreakdown: React.FC<CompactBreakdownProps> = ({
       </div>
 
       {breakdown ? (
-        <div className="mt-2 flex items-center gap-2 flex-wrap pl-2">
+        <div className="mt-2 flex items-center gap-2 pl-2 overflow-hidden">
           <a
             href={`https://jisho.org/search/${encodeURIComponent(
               breakdown.dictionaryForm
@@ -65,18 +65,18 @@ export const CompactBreakdown: React.FC<CompactBreakdownProps> = ({
             Jisho ↗
           </a>
           {breakdown.meanings.length > 0 ? (
-            <div className="text-sm text-green-900 flex gap-1 flex-wrap">
+            <div className="text-sm text-green-900 flex gap-1 overflow-x-auto flex-nowrap min-w-0">
               {breakdown.meanings.slice(0, 3).map((m, i) => (
                 <span
                   key={i}
-                  className="bg-green-50 border border-green-200 rounded px-2 py-0.5"
+                  className="bg-green-50 border border-green-200 rounded px-2 py-0.5 whitespace-nowrap flex-shrink-0"
                 >
                   {m}
                 </span>
               ))}
             </div>
           ) : (
-            <div className="text-sm text-gray-500 italic">
+            <div className="text-sm text-gray-500 italic flex-shrink-0">
               No translation found for {breakdown.dictionaryForm}.
             </div>
           )}

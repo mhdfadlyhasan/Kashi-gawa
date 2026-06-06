@@ -11,6 +11,7 @@ import { SongLibrary } from './components/SongLibrary';
 import { LyricDisplay } from './components/LyricDisplay';
 import { ReadingModeToggle } from './components/ReadingModeToggle';
 import { DetailModeToggle } from './components/DetailModeToggle';
+import { CompactBreakdown } from './components/CompactBreakdown';
 import { WelcomeModal } from './components/WelcomeModal';
 import { ToastContainer } from './components/ToastContainer';
 import { kanaToRomaji } from './lib/kana';
@@ -31,6 +32,7 @@ function App() {
   const [tokens, setTokens] = useState<Token[][]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [selectedToken, setSelectedToken] = useState<Token | null>(null);
 
   const activeSong = activeId ? getSong(activeId) : null;
 
@@ -223,32 +225,42 @@ function App() {
             </div>
           ) : activeSong ? (
             <div>
-              <div className="sticky top-0 z-10 bg-gray-50/95 backdrop-blur-sm mb-6 flex items-start justify-between gap-2 py-2 -mx-2 px-2 rounded-lg">
-                <div className="min-w-0">
-                  <h2 className="text-xl md:text-2xl font-bold text-gray-900 truncate">
-                    {displayTitle}
-                  </h2>
-                  <p className="text-gray-500 truncate">{displayArtist}</p>
-                </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <DetailModeToggle detailMode={detailMode} onChange={setDetailMode} />
-                  <button
-                    className={`p-2 rounded-lg border transition ${isEditMode ? 'bg-blue-100 text-blue-700 border-blue-300' : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-transparent'}`}
-                    onClick={() => setIsEditMode(!isEditMode)}
-                    title="Toggle edit mode"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
-                    </svg>
-                  </button>
-                  <button
-                    onClick={handleReparse}
-                    disabled={!tokenizerReady}
-                    className="flex-shrink-0 px-3 py-1.5 text-sm bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {readingMode === 'romaji' ? 'sai kaiseki' : '再解析'}
-                  </button>
-                </div>
+              <div className={`sticky top-0 z-10 bg-gray-50/95 backdrop-blur-sm mb-6 py-2 -mx-2 px-2 rounded-lg ${detailMode === 'compact' ? 'min-h-[120px]' : ''}`}>
+                {detailMode === 'compact' && selectedToken ? (
+                  <CompactBreakdown
+                    token={selectedToken}
+                    onClose={() => setSelectedToken(null)}
+                    readingMode={readingMode}
+                  />
+                ) : (
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <h2 className="text-xl md:text-2xl font-bold text-gray-900 truncate">
+                        {displayTitle}
+                      </h2>
+                      <p className="text-gray-500 truncate">{displayArtist}</p>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <DetailModeToggle detailMode={detailMode} onChange={setDetailMode} />
+                      <button
+                        className={`p-2 rounded-lg border transition ${isEditMode ? 'bg-blue-100 text-blue-700 border-blue-300' : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-transparent'}`}
+                        onClick={() => setIsEditMode(!isEditMode)}
+                        title="Toggle edit mode"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={handleReparse}
+                        disabled={!tokenizerReady}
+                        className="flex-shrink-0 px-3 py-1.5 text-sm bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {readingMode === 'romaji' ? 'sai kaiseki' : '再解析'}
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
               {tokens.length > 0 ? (
                 <LyricDisplay
@@ -256,6 +268,8 @@ function App() {
                   readingMode={readingMode}
                   isEditMode={isEditMode}
                   detailMode={detailMode}
+                  selectedToken={selectedToken}
+                  setSelectedToken={setSelectedToken}
                   onTokensChange={(newLines) => {
                     setTokens(newLines);
                     if (activeId) {

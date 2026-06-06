@@ -3,7 +3,6 @@ import { Token } from '../types';
 import { ReadingMode } from '../lib/kana';
 import { WordToken } from './WordToken';
 import { BreakdownModal } from './BreakdownModal';
-import { CompactBreakdown } from './CompactBreakdown';
 import { DetailMode } from '../hooks/useDetailMode';
 
 interface LyricDisplayProps {
@@ -12,10 +11,11 @@ interface LyricDisplayProps {
   readingMode: ReadingMode;
   isEditMode?: boolean;
   detailMode: DetailMode;
+  selectedToken: Token | null;
+  setSelectedToken: (token: Token | null) => void;
 }
 
-export const LyricDisplay: React.FC<LyricDisplayProps> = ({ lines, onTokensChange, readingMode, isEditMode, detailMode }) => {
-  const [selectedToken, setSelectedToken] = useState<Token | null>(null);
+export const LyricDisplay: React.FC<LyricDisplayProps> = ({ lines, onTokensChange, readingMode, isEditMode, detailMode, selectedToken, setSelectedToken }) => {
   const [splitTokenKey, setSplitTokenKey] = useState<string | null>(null);
 
   // Close split mode / compact panel on Escape
@@ -87,13 +87,6 @@ export const LyricDisplay: React.FC<LyricDisplayProps> = ({ lines, onTokensChang
 
   return (
     <div className="space-y-4 leading-loose">
-      {detailMode === 'compact' && selectedToken && (
-        <CompactBreakdown
-          token={selectedToken}
-          onClose={() => setSelectedToken(null)}
-          readingMode={readingMode}
-        />
-      )}
       <div className="bg-white rounded-xl shadow-sm overflow-hidden">
         {lines.map((line, lineIdx) => {
           const isEven = lineIdx % 2 === 0;
@@ -118,7 +111,7 @@ export const LyricDisplay: React.FC<LyricDisplayProps> = ({ lines, onTokensChang
                         if (isSplitMode) {
                           setSplitTokenKey(null);
                         } else {
-                          setSelectedToken((prev) => (prev === token ? null : token));
+                          setSelectedToken(selectedToken === token ? null : token);
                         }
                       }}
                       onEnterSplitMode={() => {
