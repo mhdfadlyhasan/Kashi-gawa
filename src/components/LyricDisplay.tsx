@@ -93,6 +93,7 @@ export const LyricDisplay: React.FC<LyricDisplayProps> = ({ lines, onTokensChang
                 <React.Fragment key={tokenKey}>
                   <WordToken
                     token={token}
+                    readingMode={readingMode}
                     isSplitMode={isSplitMode}
                     onSplit={(splitAt) => handleSplit(lineIdx, tokenIdx, splitAt)}
                     onClick={() => {
