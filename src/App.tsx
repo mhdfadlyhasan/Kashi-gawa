@@ -123,11 +123,18 @@ function App() {
     const song = getSong(activeId);
     if (!song) return;
 
+    const confirmed = window.confirm(
+      readingMode === 'romaji'
+        ? 'Re-parsing will delete all edits you made. Are you sure?'
+        : '再解析を行うと、すべての編集内容が削除されます。よろしいですか？'
+    );
+    if (!confirmed) return;
+
     setTokens([]);
     const toks = await tokenizeLines(song.plainLyrics);
     setTokens(toks);
     updateTokens(activeId, toks);
-  }, [activeId, tokenizerReady, getSong, tokenizeLines, updateTokens]);
+  }, [activeId, tokenizerReady, getSong, tokenizeLines, updateTokens, readingMode]);
 
   const displayTitle = activeSong && readingMode === 'romaji' && activeSong.titleReading
     ? activeSong.titleReading
