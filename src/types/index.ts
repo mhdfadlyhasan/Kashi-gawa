@@ -31,6 +31,8 @@ export interface LibraryItem {
   plainLyrics: string;
   addedAt: string;
   tokens: Token[][] | null;
+  titleReading?: string;
+  artistReading?: string;
 }
 
 export interface WordBreakdown {

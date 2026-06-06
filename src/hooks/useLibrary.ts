@@ -43,6 +43,12 @@ export function useLibrary() {
     );
   }, []);
 
+  const updateReadings = useCallback((id: number, titleReading: string, artistReading: string) => {
+    setLibrary((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, titleReading, artistReading } : s))
+    );
+  }, []);
+
   const getSong = useCallback(
     (id: number) => library.find((s) => s.id === id) || null,
     [library]
@@ -53,6 +59,7 @@ export function useLibrary() {
     addSong,
     removeSong,
     updateTokens,
+    updateReadings,
     getSong,
   };
 }

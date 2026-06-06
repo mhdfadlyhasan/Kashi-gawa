@@ -5,6 +5,9 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   base: '/Kashi-gawa/',
+  optimizeDeps: {
+    include: ['kuromoji', 'kuromoji/src/loader/BrowserDictionaryLoader.js'],
+  },
   resolve: {
     alias: {
       path: 'path-browserify',

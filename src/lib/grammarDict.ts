@@ -1,7 +1,9 @@
 export const GRAMMAR_DICT: Record<string, string> = {
   'えない': 'potential negative',
   'て': 'te-form (connective)',
+  'で': 'te-form (connective)',
   'た': 'past tense',
+  'だ': 'past tense',
   'ます': 'polite form',
   'ました': 'polite past',
   'ません': 'polite negative',

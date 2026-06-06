@@ -10,7 +10,7 @@ export function getGrammarType(pos: string): GrammarType {
 export function getColorClasses(grammarType: GrammarType): string {
   switch (grammarType) {
     case 'noun':
-      return 'border-gray-400 bg-transparent';
+      return 'border-blue-400 bg-blue-100';
     case 'particle':
       return 'border-yellow-400 bg-yellow-100';
     case 'verb':

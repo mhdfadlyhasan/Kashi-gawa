@@ -1,11 +1,13 @@
 import React from 'react';
 import { LibraryItem } from '../types';
+import { ReadingMode } from '../lib/kana';
 
 interface SongLibraryProps {
   library: LibraryItem[];
   activeId: number | null;
   onSelect: (song: LibraryItem) => void;
   onRemove: (id: number) => void;
+  readingMode: ReadingMode;
 }
 
 export const SongLibrary: React.FC<SongLibraryProps> = ({
@@ -13,13 +15,25 @@ export const SongLibrary: React.FC<SongLibraryProps> = ({
   activeId,
   onSelect,
   onRemove,
+  readingMode,
 }) => {
+  const getDisplayText = (text: string, reading?: string) => {
+    if (readingMode === 'romaji' && reading) {
+      return reading;
+    }
+    return text;
+  };
+
   return (
     <div className="h-full flex flex-col">
-      <h2 className="text-lg font-bold text-gray-800 mb-4 px-2">ライブラリ</h2>
+      <h2 className="text-lg font-bold text-gray-800 mb-4 px-2">
+        {readingMode === 'romaji' ? 'raiburari' : 'ライブラリ'}
+      </h2>
       <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
         {library.length === 0 && (
-          <p className="text-sm text-gray-400 px-2">曲を追加してください</p>
+          <p className="text-sm text-gray-400 px-2">
+            {readingMode === 'romaji' ? 'kyoku wo tsuika shite kudasai' : '曲を追加してください'}
+          </p>
         )}
         {library.map((song) => (
           <div
@@ -31,13 +45,15 @@ export const SongLibrary: React.FC<SongLibraryProps> = ({
             }`}
             onClick={() => onSelect(song)}
           >
-            <div className="font-medium text-sm truncate pr-6">{song.title}</div>
+            <div className="font-medium text-sm truncate pr-6">
+              {getDisplayText(song.title, song.titleReading)}
+            </div>
             <div
               className={`text-xs truncate ${
                 activeId === song.id ? 'text-gray-300' : 'text-gray-500'
               }`}
             >
-              {song.artist}
+              {getDisplayText(song.artist, song.artistReading)}
             </div>
             <button
               onClick={(e) => {
@@ -50,7 +66,7 @@ export const SongLibrary: React.FC<SongLibraryProps> = ({
                   : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
               }`}
             >
-              削除
+              {readingMode === 'romaji' ? 'sakujo' : '削除'}
             </button>
           </div>
         ))}

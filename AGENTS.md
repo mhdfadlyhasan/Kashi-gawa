@@ -20,7 +20,7 @@ Kashi-gawa (歌詞川, "Lyrics River") is a single-page web application for lear
 | Styling | Tailwind CSS |
 | Japanese Tokenization | Kuromoji.js |
 | Lyrics Source | LRCLIB API (browser CORS-friendly) |
-| Dictionary | Jisho API (free, no auth, CORS-friendly) |
+| Dictionary | JMDict common-only (`public/dict/jmdict-common.json`, ~22k words) + Core 1000 fallback (`src/lib/core1000Dict.ts`) + JLPT Vocab API fallback |
 | Grammar Explanations | Local JSON dictionary (`src/lib/grammarDict.ts`) |
 | State & Persistence | React hooks + `localStorage` |
 | Deployment | GitHub Pages (via GitHub Actions) |
@@ -43,9 +43,15 @@ src/
     useTokenizer.ts           # Kuromoji.js init & tokenization
   lib/
     lrclib.ts                 # LRCLIB API client
-    jisho.ts                  # Jisho API client
+    jisho.ts                  # JLPT Vocab API client (local dict first, API fallback)
+    core1000Dict.ts           # Bundled Core 1000 dictionary
     colorMap.ts               # Part-of-Speech → color logic
     grammarDict.ts            # Local conjugation/grammar explanations
+public/
+  dict/
+    jmdict-common.json      # JMDict common-only dictionary (~22k words)
+scripts/
+  build-dict.ts             # Generates core1000Dict.ts from Jisho API
   types/
     index.ts                  # All TypeScript interfaces
   styles/
@@ -68,7 +74,7 @@ Each `WordToken` is wrapped in a square box. Colors indicate part-of-speech:
 
 | Color | Style | POS Tags (Kuromoji) |
 |-------|-------|---------------------|
-| Hollow (border only) | `border-gray-400 bg-transparent` | 名詞 (noun), 代名詞 (pronoun), 固有名詞 (proper noun) |
+| Blue | `border-blue-400 bg-blue-100` | 名詞 (noun), 代名詞 (pronoun), 固有名詞 (proper noun) |
 | Yellow | `border-yellow-400 bg-yellow-100` | 助詞 (particle) |
 | Green | `border-green-400 bg-green-100` | 動詞 (verb) — transitive/intransitive distinction deferred to later phase |
 | Default (subtle gray) | `border-gray-200 bg-gray-50` | Everything else (adjectives, adverbs, etc.) |
@@ -81,7 +87,7 @@ When a user clicks a `WordToken`, show a popup with:
 2. **Reading (よみがな)**: Hiragana reading (e.g., なぐれない)
 3. **Dictionary Form**: The unconjugated base form (e.g., 殴る)
 4. **Grammar Explanation**: From local `grammarDict.ts` (e.g., "potential negative")
-5. **Meaning**: From Jisho API (English definition)
+5. **Meaning**: From JMDict common-only (`public/dict/jmdict-common.json`), then Core 1000, then JLPT Vocab API
 
 ## localStorage Schema
 
@@ -108,9 +114,10 @@ interface LibraryItem {
 - Get by ID: `GET https://lrclib.net/api/get/{id}`
 - Returns JSON with `id`, `name`, `artistName`, `plainLyrics`, etc.
 
-### Jisho
-- Search: `GET https://jisho.org/api/v1/search/words?keyword={word}`
-- Returns JSON with `data[].japanese[].reading`, `data[].senses[].english_definitions[]`.
+### JLPT Vocab API
+- Search: `GET https://jlpt-vocab-api.vercel.app/api/words?word={word}`
+- Returns JSON with `words[].word`, `words[].meaning`, `words[].furigana`, `words[].level`.
+- **Note**: This API is CORS-friendly and covers JLPT N5–N1 vocabulary. It serves as the fallback after local dictionaries.
 
 ## Deployment
 
