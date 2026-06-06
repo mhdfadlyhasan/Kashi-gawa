@@ -80,12 +80,12 @@ export const WordToken: React.FC<WordTokenProps> = ({
         onClick={onClick}
         className={`inline-flex flex-col items-center px-2 py-1 border rounded-md font-medium transition hover:opacity-80 hover:shadow-sm ${colorClasses}`}
       >
-        <span className="text-base leading-tight">{displayText}</span>
         {displayReading && (
-          <span className="text-xs text-gray-500 mt-0.5 leading-tight">
+          <span className="text-[9px] text-gray-500 leading-tight mb-0">
             {displayReading}
           </span>
         )}
+        <span className="text-base leading-tight">{displayText}</span>
       </button>
       {isEditMode && chars.length > 1 && onEnterSplitMode && readingMode !== 'romaji' && (
         <span
