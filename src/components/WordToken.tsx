@@ -18,13 +18,12 @@ export const WordToken: React.FC<WordTokenProps> = ({
   onClick,
   readingMode,
   isSplitMode,
-  isEditMode,
   onSplit,
-  onEnterSplitMode,
 }) => {
   const grammarType = getGrammarType(token.pos);
   const colorClasses = getColorClasses(grammarType);
   const chars = token.surface_form.split('');
+  const isPunctuation = token.pos === '記号' || /^[\s\p{P}\p{S}]+$/u.test(token.surface_form);
 
   const displayReading = (() => {
     if (!token.reading) return null;
@@ -40,6 +39,14 @@ export const WordToken: React.FC<WordTokenProps> = ({
   const displayText = readingMode === 'romaji'
     ? convertReading(token.reading || token.surface_form, 'romaji')
     : token.surface_form;
+
+  if (isPunctuation) {
+    return (
+      <span className="inline-block text-base font-medium px-0.5">
+        {token.surface_form}
+      </span>
+    );
+  }
 
   if (isSplitMode && chars.length > 1 && readingMode !== 'romaji') {
     return (
@@ -87,18 +94,6 @@ export const WordToken: React.FC<WordTokenProps> = ({
         )}
         <span className="text-base leading-tight">{displayText}</span>
       </button>
-      {isEditMode && chars.length > 1 && onEnterSplitMode && readingMode !== 'romaji' && (
-        <span
-          onClick={(e) => {
-            e.stopPropagation();
-            onEnterSplitMode();
-          }}
-          className="absolute -top-1.5 -right-1.5 text-[9px] bg-white border border-gray-300 rounded-full w-4 h-4 flex items-center justify-center cursor-pointer shadow-sm hover:bg-gray-50 z-10"
-          title="Split word"
-        >
-          ✂️
-        </span>
-      )}
     </span>
   );
 };

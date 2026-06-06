@@ -43,4 +43,4 @@ export interface WordBreakdown {
   meanings: string[];
 }
 
-export type GrammarType = 'noun' | 'particle' | 'verb' | 'adjective' | 'other';
+export type GrammarType = 'noun' | 'particle' | 'verb' | 'adjective' | 'adverb' | 'interjection' | 'adnominal' | 'other';

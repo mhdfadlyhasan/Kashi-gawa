@@ -156,12 +156,9 @@ export async function tokenizeText(text: string): Promise<Token[]> {
     merged.push(current);
   }
 
-  // Filter out empty/whitespace-only tokens and pure symbols/punctuation
+  // Filter out empty/whitespace-only tokens
   return merged.filter((tok: Token) => {
     if (!tok.surface_form || tok.surface_form.trim() === '') return false;
-    if (tok.pos === '記号') return false;
-    // Fallback: filter out tokens made only of punctuation/whitespace/special chars
-    if (/^[\s\p{P}\p{S}]+$/u.test(tok.surface_form)) return false;
     return true;
   });
 }
@@ -305,8 +302,6 @@ export function useTokenizer() {
 
       return merged.filter((tok) => {
         if (!tok.surface_form || tok.surface_form.trim() === '') return false;
-        if (tok.pos === '記号') return false;
-        if (/^[\s\p{P}\p{S}]+$/u.test(tok.surface_form)) return false;
         return true;
       });
     },

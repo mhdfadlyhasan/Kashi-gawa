@@ -106,7 +106,10 @@ Each word in the lyrics is wrapped in a box with a color based on its part of sp
 | 🟡 Yellow | Particle |
 | 🟢 Green | Verb |
 | 🔴 Red | I-adjective, Na-adjective |
-| ⚪ Gray | Everything else (adverbs, etc.) |
+| 🟣 Purple | Adverb |
+| 🟠 Orange | Interjection |
+| 🩷 Pink | Adnominal (連体詞) |
+| ⚪ Gray | Everything else |
 
 ## Deployment
 

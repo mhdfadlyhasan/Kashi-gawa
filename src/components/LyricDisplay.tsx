@@ -3,23 +3,27 @@ import { Token } from '../types';
 import { ReadingMode } from '../lib/kana';
 import { WordToken } from './WordToken';
 import { BreakdownModal } from './BreakdownModal';
+import { CompactBreakdown } from './CompactBreakdown';
+import { DetailMode } from '../hooks/useDetailMode';
 
 interface LyricDisplayProps {
   lines: Token[][];
   onTokensChange?: (newLines: Token[][]) => void;
   readingMode: ReadingMode;
   isEditMode?: boolean;
+  detailMode: DetailMode;
 }
 
-export const LyricDisplay: React.FC<LyricDisplayProps> = ({ lines, onTokensChange, readingMode, isEditMode }) => {
+export const LyricDisplay: React.FC<LyricDisplayProps> = ({ lines, onTokensChange, readingMode, isEditMode, detailMode }) => {
   const [selectedToken, setSelectedToken] = useState<Token | null>(null);
   const [splitTokenKey, setSplitTokenKey] = useState<string | null>(null);
 
-  // Close split mode on Escape
+  // Close split mode / compact panel on Escape
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setSplitTokenKey(null);
+        setSelectedToken(null);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -83,47 +87,63 @@ export const LyricDisplay: React.FC<LyricDisplayProps> = ({ lines, onTokensChang
 
   return (
     <div className="space-y-4 leading-loose">
-      {lines.map((line, lineIdx) => (
-          <div key={lineIdx} className="flex flex-wrap gap-1 items-center">
-            {line.map((token, tokenIdx) => {
-              const tokenKey = `${lineIdx}-${tokenIdx}`;
-              const isSplitMode = splitTokenKey === tokenKey;
-              return (
-                <React.Fragment key={tokenKey}>
-                  <WordToken
-                    token={token}
-                    readingMode={readingMode}
-                    isSplitMode={isSplitMode}
-                    isEditMode={isEditMode}
-                    onSplit={(splitAt) => handleSplit(lineIdx, tokenIdx, splitAt)}
-                    onClick={() => {
-                      if (isSplitMode) {
-                        setSplitTokenKey(null);
-                      } else {
-                        setSelectedToken(token);
-                      }
-                    }}
-                    onEnterSplitMode={() => {
-                      setSplitTokenKey(tokenKey);
-                    }}
-                  />
-                  {tokenIdx < line.length - 1 && (
-                    <div
-                      className={`relative w-4 md:w-1 h-8 md:h-6 flex items-center justify-center cursor-pointer hover:bg-gray-100 rounded transition ${isEditMode ? 'flex' : 'hidden'}`}
-                      onClick={() => handleMerge(lineIdx, tokenIdx)}
-                    >
-                      <span className="text-[10px] leading-none text-gray-400 bg-white border border-gray-200 rounded px-1 py-0.5 shadow-sm z-10 opacity-100">
-                        +
-                      </span>
-                    </div>
-                  )}
-                </React.Fragment>
-              );
-            })}
-          </div>
-        ))}
+      {detailMode === 'compact' && selectedToken && (
+        <CompactBreakdown
+          token={selectedToken}
+          onClose={() => setSelectedToken(null)}
+          readingMode={readingMode}
+        />
+      )}
+      <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+        {lines.map((line, lineIdx) => {
+          const isEven = lineIdx % 2 === 0;
+          const isLast = lineIdx === lines.length - 1;
+          return (
+            <div
+              key={lineIdx}
+              className={`flex flex-wrap gap-1 items-center py-1.5 ${isEven ? 'bg-white' : 'bg-gray-200'} ${!isLast ? 'border-b border-gray-100' : ''}`}
+            >
+              {line.map((token, tokenIdx) => {
+                const tokenKey = `${lineIdx}-${tokenIdx}`;
+                const isSplitMode = splitTokenKey === tokenKey;
+                return (
+                  <React.Fragment key={tokenKey}>
+                    <WordToken
+                      token={token}
+                      readingMode={readingMode}
+                      isSplitMode={isSplitMode}
+                      isEditMode={isEditMode}
+                      onSplit={(splitAt) => handleSplit(lineIdx, tokenIdx, splitAt)}
+                      onClick={() => {
+                        if (isSplitMode) {
+                          setSplitTokenKey(null);
+                        } else {
+                          setSelectedToken((prev) => (prev === token ? null : token));
+                        }
+                      }}
+                      onEnterSplitMode={() => {
+                        setSplitTokenKey(tokenKey);
+                      }}
+                    />
+                    {tokenIdx < line.length - 1 && (
+                      <div
+                        className={`relative w-4 md:w-1 h-8 md:h-6 flex items-center justify-center cursor-pointer hover:bg-gray-100 rounded transition ${isEditMode ? 'flex' : 'hidden'}`}
+                        onClick={() => handleMerge(lineIdx, tokenIdx)}
+                      >
+                        <span className="text-[10px] leading-none text-gray-400 bg-white border border-gray-200 rounded px-1 py-0.5 shadow-sm z-10 opacity-100">
+                          +
+                        </span>
+                      </div>
+                    )}
+                  </React.Fragment>
+                );
+              })}
+            </div>
+          );
+        })}
+      </div>
 
-      {selectedToken && (
+      {detailMode === 'popup' && selectedToken && (
         <BreakdownModal
           token={selectedToken}
           onClose={() => setSelectedToken(null)}

@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
-import { Token, WordBreakdown } from '../types';
-import { searchJisho } from '../lib/jisho';
-import { findGrammarExplanation } from '../lib/grammarDict';
+import React from 'react';
+import { Token } from '../types';
 import { ReadingMode, convertReading } from '../lib/kana';
+import { getPosLabel } from '../lib/colorMap';
+import { useWordBreakdown } from '../hooks/useWordBreakdown';
 
 interface BreakdownModalProps {
   token: Token;
@@ -15,37 +15,7 @@ export const BreakdownModal: React.FC<BreakdownModalProps> = ({
   onClose,
   readingMode,
 }) => {
-  const [breakdown, setBreakdown] = useState<WordBreakdown | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const searchForm = token.basic_form !== '*' ? token.basic_form : null;
-      let jisho = await searchJisho(searchForm || token.surface_form);
-      if (!jisho) {
-        jisho = await searchJisho(token.surface_form);
-      }
-      if (cancelled) return;
-
-      const meanings =
-        jisho?.senses.flatMap((s) => s.english_definitions).slice(0, 5) || [];
-
-      const matchedWord = jisho?.japanese[0]?.word;
-      const dictionaryForm =
-        matchedWord || searchForm || token.surface_form;
-
-      setBreakdown({
-        surfaceForm: token.surface_form,
-        reading: token.reading || '',
-        dictionaryForm,
-        grammarExplanation: findGrammarExplanation(token.surface_form),
-        meanings,
-      });
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [token]);
+  const breakdown = useWordBreakdown(token);
 
   const displayedReading = token.reading
     ? convertReading(token.reading, readingMode === 'normal' ? 'katakana' : readingMode)
@@ -77,6 +47,9 @@ export const BreakdownModal: React.FC<BreakdownModalProps> = ({
                 {displayedReading}
               </div>
             )}
+            <div className="text-sm text-gray-400 mt-1">
+              {getPosLabel(token.pos)}
+            </div>
           </div>
 
           {breakdown ? (

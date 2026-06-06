@@ -5,10 +5,12 @@ import { useLibrary } from './hooks/useLibrary';
 import { useTokenizer, tokenizeText } from './hooks/useTokenizer';
 import { useReadingMode } from './hooks/useReadingMode';
 import { useFirstVisit } from './hooks/useFirstVisit';
+import { useDetailMode } from './hooks/useDetailMode';
 import { SearchBar } from './components/SearchBar';
 import { SongLibrary } from './components/SongLibrary';
 import { LyricDisplay } from './components/LyricDisplay';
 import { ReadingModeToggle } from './components/ReadingModeToggle';
+import { DetailModeToggle } from './components/DetailModeToggle';
 import { WelcomeModal } from './components/WelcomeModal';
 import { ToastContainer } from './components/ToastContainer';
 import { kanaToRomaji } from './lib/kana';
@@ -22,6 +24,7 @@ function App() {
   const { library, addSong, removeSong, updateTokens, updateReadings, getSong } = useLibrary();
   const { ready: tokenizerReady, tokenizeLines } = useTokenizer();
   const { readingMode, setReadingMode } = useReadingMode();
+  const { detailMode, setDetailMode } = useDetailMode();
   const [isFirstVisit, markSeen] = useFirstVisit();
 
   const [activeId, setActiveId] = useState<number | null>(null);
@@ -210,7 +213,7 @@ function App() {
         </aside>
 
         {/* Lyric Display */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-8">
+        <main className="flex-1 overflow-y-auto px-2 py-4 md:px-4 md:py-8">
           {isSelecting ? (
             <div className="flex items-center justify-center h-full text-gray-400">
               <div className="text-center">
@@ -228,6 +231,7 @@ function App() {
                   <p className="text-gray-500 truncate">{displayArtist}</p>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
+                  <DetailModeToggle detailMode={detailMode} onChange={setDetailMode} />
                   <button
                     className={`p-2 rounded-lg border transition ${isEditMode ? 'bg-blue-100 text-blue-700 border-blue-300' : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-transparent'}`}
                     onClick={() => setIsEditMode(!isEditMode)}
@@ -251,6 +255,7 @@ function App() {
                   lines={tokens}
                   readingMode={readingMode}
                   isEditMode={isEditMode}
+                  detailMode={detailMode}
                   onTokensChange={(newLines) => {
                     setTokens(newLines);
                     if (activeId) {
