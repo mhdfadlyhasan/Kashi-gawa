@@ -29,10 +29,14 @@ export const BreakdownModal: React.FC<BreakdownModalProps> = ({
       const meanings =
         jisho?.senses.flatMap((s) => s.english_definitions).slice(0, 5) || [];
 
+      const matchedWord = jisho?.japanese[0]?.word;
+      const dictionaryForm =
+        matchedWord || token.basic_form || token.surface_form;
+
       setBreakdown({
         surfaceForm: token.surface_form,
         reading: token.reading || '',
-        dictionaryForm: token.basic_form || token.surface_form,
+        dictionaryForm,
         grammarExplanation: findGrammarExplanation(token.surface_form),
         meanings,
       });

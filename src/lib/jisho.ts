@@ -36,8 +36,57 @@ function loadJmdict(): Promise<JmdictIndex> {
   return jmdictPromise;
 }
 
-export async function searchJisho(word: string): Promise<JishoResult | null> {
-  // 1. Check JMDict common-only dictionary (~22k words, loaded from JSON)
+// Maps godan e-column endings back to u-column for potential forms
+const GODAN_E_TO_U: Record<string, string> = {
+  'け': 'く', 'げ': 'ぐ', 'せ': 'す', 'て': 'つ', 'ね': 'ぬ',
+  'へ': 'ふ', 'め': 'む', 'れ': 'る', 'べ': 'ぶ', 'え': 'う',
+};
+
+// Maps godan a-column endings back to u-column for passive/causative forms
+const GODAN_A_TO_U: Record<string, string> = {
+  'か': 'く', 'が': 'ぐ', 'さ': 'す', 'た': 'つ', 'な': 'ぬ',
+  'は': 'ふ', 'ま': 'む', 'ら': 'る', 'ば': 'ぶ', 'わ': 'う',
+};
+
+function* deconjugate(word: string): Generator<string> {
+  // Special verbs
+  if (word === 'できる' || word === '出来る') {
+    yield 'する';
+  }
+  if (word === 'こられる' || word === 'こさせる' || word === '来られる') {
+    yield 'くる';
+  }
+  if (word === 'される') {
+    yield 'する';
+  }
+
+  // Ichidan potential / passive
+  if (word.endsWith('られる')) {
+    yield word.slice(0, -3) + 'る';
+  }
+  // Ichidan causative
+  if (word.endsWith('させる')) {
+    yield word.slice(0, -3) + 'る';
+  }
+  // Godan potential (e-form + る)
+  if (word.endsWith('る')) {
+    const stem = word.slice(0, -1);
+    const last = stem[stem.length - 1];
+    if (last && GODAN_E_TO_U[last]) {
+      yield stem.slice(0, -1) + GODAN_E_TO_U[last];
+    }
+  }
+  // Godan passive / causative (a-form + れる / せる)
+  if (word.endsWith('れる') || word.endsWith('せる')) {
+    const stem = word.slice(0, -2);
+    const last = stem[stem.length - 1];
+    if (last && GODAN_A_TO_U[last]) {
+      yield stem.slice(0, -1) + GODAN_A_TO_U[last];
+    }
+  }
+}
+
+async function searchLocal(word: string): Promise<JishoResult | null> {
   const jmdict = await loadJmdict();
   const jmEntry = jmdict.byWord[word] || jmdict.byReading[word];
   if (jmEntry) {
@@ -51,8 +100,6 @@ export async function searchJisho(word: string): Promise<JishoResult | null> {
       ],
     };
   }
-
-  // 2. Check local Core 1000 dictionary (offline, instant)
   const local = CORE1000_DICT[word];
   if (local) {
     return {
@@ -65,6 +112,19 @@ export async function searchJisho(word: string): Promise<JishoResult | null> {
       ],
     };
   }
+  return null;
+}
+
+export async function searchJisho(word: string): Promise<JishoResult | null> {
+  // 1. Direct local lookup
+  const direct = await searchLocal(word);
+  if (direct) return direct;
+
+  // 2. Deconjugated local lookup (e.g., potential → dictionary form)
+  for (const form of deconjugate(word)) {
+    const de = await searchLocal(form);
+    if (de) return de;
+  }
 
   // 3. Fall back to JLPT Vocab API (CORS-friendly)
   try {
@@ -72,7 +132,28 @@ export async function searchJisho(word: string): Promise<JishoResult | null> {
       `https://jlpt-vocab-api.vercel.app/api/words?word=${encodeURIComponent(word)}`
     );
     const data = await res.json();
-    if (!data.words || data.words.length === 0) return null;
+    if (!data.words || data.words.length === 0) {
+      // Try deconjugated forms against API as well
+      for (const form of deconjugate(word)) {
+        const deRes = await fetch(
+          `https://jlpt-vocab-api.vercel.app/api/words?word=${encodeURIComponent(form)}`
+        );
+        const deData = await deRes.json();
+        if (deData.words && deData.words.length > 0) {
+          const first = deData.words[0];
+          return {
+            japanese: [{ word: first.word, reading: first.furigana }],
+            senses: [
+              {
+                english_definitions: first.meaning.split('; '),
+                parts_of_speech: [],
+              },
+            ],
+          };
+        }
+      }
+      return null;
+    }
     const first = data.words[0];
     return {
       japanese: [{ word: first.word, reading: first.furigana }],

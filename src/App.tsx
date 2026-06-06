@@ -25,8 +25,8 @@ function App() {
 
   const activeSong = activeId ? getSong(activeId) : null;
 
-  // When a track is selected from search
-  const handleSelectTrack = useCallback(
+  // Load and activate a song by ID
+  const loadAndActivateSong = useCallback(
     async (id: number) => {
       const track = await selectTrack(id);
       if (!track || !track.plainLyrics) return;
@@ -59,6 +59,21 @@ function App() {
       }
     },
     [selectTrack, addSong, tokenizerReady, tokenizeLines, updateTokens]
+  );
+
+  // Load default song on first visit
+  useEffect(() => {
+    if (library.length === 0) {
+      loadAndActivateSong(23264143);
+    }
+  }, [library.length, loadAndActivateSong]);
+
+  // When a track is selected from search
+  const handleSelectTrack = useCallback(
+    async (id: number) => {
+      loadAndActivateSong(id);
+    },
+    [loadAndActivateSong]
   );
 
   // When a library item is clicked
