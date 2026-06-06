@@ -212,7 +212,7 @@ function App() {
             </div>
           ) : activeSong ? (
             <div>
-              <div className="mb-6 flex items-start justify-between gap-2">
+              <div className="sticky top-0 z-10 bg-gray-50/95 backdrop-blur-sm mb-6 flex items-start justify-between gap-2 py-2 -mx-2 px-2 rounded-lg">
                 <div className="min-w-0">
                   <h2 className="text-xl md:text-2xl font-bold text-gray-900 truncate">
                     {displayTitle}
