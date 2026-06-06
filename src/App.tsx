@@ -4,10 +4,12 @@ import { useLyrics } from './hooks/useLyrics';
 import { useLibrary } from './hooks/useLibrary';
 import { useTokenizer, tokenizeText } from './hooks/useTokenizer';
 import { useReadingMode } from './hooks/useReadingMode';
+import { useFirstVisit } from './hooks/useFirstVisit';
 import { SearchBar } from './components/SearchBar';
 import { SongLibrary } from './components/SongLibrary';
 import { LyricDisplay } from './components/LyricDisplay';
 import { ReadingModeToggle } from './components/ReadingModeToggle';
+import { WelcomeModal } from './components/WelcomeModal';
 import { kanaToRomaji } from './lib/kana';
 
 function tokensToRomaji(tokens: Token[]): string {
@@ -19,6 +21,7 @@ function App() {
   const { library, addSong, removeSong, updateTokens, updateReadings, getSong } = useLibrary();
   const { ready: tokenizerReady, tokenizeLines } = useTokenizer();
   const { readingMode, setReadingMode } = useReadingMode();
+  const [isFirstVisit, markSeen] = useFirstVisit();
 
   const [activeId, setActiveId] = useState<number | null>(null);
   const [tokens, setTokens] = useState<Token[][]>([]);
@@ -261,6 +264,8 @@ function App() {
           )}
         </main>
       </div>
+
+      {isFirstVisit && <WelcomeModal onClose={markSeen} />}
     </div>
   );
 }
