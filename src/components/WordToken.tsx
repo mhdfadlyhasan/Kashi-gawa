@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Token } from '../types';
 import { getGrammarType, getColorClasses } from '../lib/colorMap';
 import { ReadingMode, convertReading } from '../lib/kana';
@@ -8,6 +8,7 @@ interface WordTokenProps {
   onClick: () => void;
   readingMode: ReadingMode;
   isSplitMode: boolean;
+  isEditMode?: boolean;
   onSplit?: (index: number) => void;
   onEnterSplitMode?: () => void;
 }
@@ -17,13 +18,13 @@ export const WordToken: React.FC<WordTokenProps> = ({
   onClick,
   readingMode,
   isSplitMode,
+  isEditMode,
   onSplit,
   onEnterSplitMode,
 }) => {
   const grammarType = getGrammarType(token.pos);
   const colorClasses = getColorClasses(grammarType);
   const chars = token.surface_form.split('');
-  const [hovered, setHovered] = useState(false);
 
   const displayReading = (() => {
     if (!token.reading) return null;
@@ -77,8 +78,6 @@ export const WordToken: React.FC<WordTokenProps> = ({
     <span className="relative inline-block">
       <button
         onClick={onClick}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
         className={`inline-flex flex-col items-center px-2 py-1 border rounded-md font-medium transition hover:opacity-80 hover:shadow-sm ${colorClasses}`}
       >
         <span className="text-base leading-tight">{displayText}</span>
@@ -88,7 +87,7 @@ export const WordToken: React.FC<WordTokenProps> = ({
           </span>
         )}
       </button>
-      {hovered && chars.length > 1 && onEnterSplitMode && readingMode !== 'romaji' && (
+      {isEditMode && chars.length > 1 && onEnterSplitMode && readingMode !== 'romaji' && (
         <span
           onClick={(e) => {
             e.stopPropagation();

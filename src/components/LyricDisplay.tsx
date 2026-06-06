@@ -8,12 +8,12 @@ interface LyricDisplayProps {
   lines: Token[][];
   onTokensChange?: (newLines: Token[][]) => void;
   readingMode: ReadingMode;
+  isEditMode?: boolean;
 }
 
-export const LyricDisplay: React.FC<LyricDisplayProps> = ({ lines, onTokensChange, readingMode }) => {
+export const LyricDisplay: React.FC<LyricDisplayProps> = ({ lines, onTokensChange, readingMode, isEditMode }) => {
   const [selectedToken, setSelectedToken] = useState<Token | null>(null);
   const [splitTokenKey, setSplitTokenKey] = useState<string | null>(null);
-  const [hoverMerge, setHoverMerge] = useState<string | null>(null);
 
   // Close split mode on Escape
   useEffect(() => {
@@ -44,7 +44,6 @@ export const LyricDisplay: React.FC<LyricDisplayProps> = ({ lines, onTokensChang
         return newTokens;
       });
       onTokensChange?.(newLines);
-      setHoverMerge(null);
     },
     [lines, onTokensChange]
   );
@@ -95,6 +94,7 @@ export const LyricDisplay: React.FC<LyricDisplayProps> = ({ lines, onTokensChang
                     token={token}
                     readingMode={readingMode}
                     isSplitMode={isSplitMode}
+                    isEditMode={isEditMode}
                     onSplit={(splitAt) => handleSplit(lineIdx, tokenIdx, splitAt)}
                     onClick={() => {
                       if (isSplitMode) {
@@ -109,16 +109,12 @@ export const LyricDisplay: React.FC<LyricDisplayProps> = ({ lines, onTokensChang
                   />
                   {tokenIdx < line.length - 1 && (
                     <div
-                      className="relative w-1 h-6 flex items-center justify-center group cursor-pointer"
-                      onMouseEnter={() => setHoverMerge(tokenKey)}
-                      onMouseLeave={() => setHoverMerge(null)}
+                      className={`relative w-4 md:w-1 h-8 md:h-6 flex items-center justify-center cursor-pointer hover:bg-gray-100 rounded transition ${isEditMode ? 'flex' : 'hidden'}`}
                       onClick={() => handleMerge(lineIdx, tokenIdx)}
                     >
-                      {hoverMerge === tokenKey && (
-                        <span className="absolute text-[10px] leading-none text-gray-400 bg-white border border-gray-200 rounded px-1 py-0.5 shadow-sm z-10">
-                          +
-                        </span>
-                      )}
+                      <span className="text-[10px] leading-none text-gray-400 bg-white border border-gray-200 rounded px-1 py-0.5 shadow-sm z-10 opacity-100">
+                        +
+                      </span>
                     </div>
                   )}
                 </React.Fragment>

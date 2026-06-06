@@ -48,12 +48,12 @@ export const SearchBar: React.FC<SearchBarProps> = ({
             if (!e.target.value) onClear();
           }}
           placeholder={placeholder}
-          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+          className="flex-1 min-w-0 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
         />
         <button
           type="submit"
           disabled={isLoading}
-          className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+          className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0 whitespace-nowrap"
         >
           {searchLabel}
         </button>

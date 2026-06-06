@@ -60,11 +60,11 @@ export const SongLibrary: React.FC<SongLibraryProps> = ({
                 e.stopPropagation();
                 onRemove(song.id);
               }}
-              className={`absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition text-xs px-2 py-1 rounded ${
+              className={`absolute right-2 top-1/2 -translate-y-1/2 transition text-xs px-2 py-1 rounded ${
                 activeId === song.id
                   ? 'bg-gray-700 text-white hover:bg-gray-600'
                   : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
-              }`}
+              } opacity-100 md:opacity-0 md:group-hover:opacity-100`}
             >
               {readingMode === 'romaji' ? 'sakujo' : '削除'}
             </button>
