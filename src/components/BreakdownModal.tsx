@@ -20,7 +20,8 @@ export const BreakdownModal: React.FC<BreakdownModalProps> = ({
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      let jisho = await searchJisho(token.basic_form || token.surface_form);
+      const searchForm = token.basic_form !== '*' ? token.basic_form : null;
+      let jisho = await searchJisho(searchForm || token.surface_form);
       if (!jisho) {
         jisho = await searchJisho(token.surface_form);
       }
@@ -31,7 +32,7 @@ export const BreakdownModal: React.FC<BreakdownModalProps> = ({
 
       const matchedWord = jisho?.japanese[0]?.word;
       const dictionaryForm =
-        matchedWord || token.basic_form || token.surface_form;
+        matchedWord || searchForm || token.surface_form;
 
       setBreakdown({
         surfaceForm: token.surface_form,
