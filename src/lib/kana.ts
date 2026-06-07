@@ -1,4 +1,4 @@
-export type ReadingMode = 'normal' | 'hiragana' | 'katakana' | 'romaji';
+export type ReadingMode = 'normal' | 'hiragana' | 'katakana' | 'furigana' | 'romaji';
 
 const KATAKANA_TO_HIRAGANA_OFFSET = 0x60;
 
@@ -136,6 +136,7 @@ export function convertReading(reading: string, mode: ReadingMode): string {
       return katakanaToHiragana(reading);
     case 'katakana':
       return reading;
+    case 'furigana':
     case 'romaji':
       return kanaToRomaji(reading);
     default:

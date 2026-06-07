@@ -33,6 +33,9 @@ export const WordToken: React.FC<WordTokenProps> = ({
     if (readingMode === 'hiragana') {
       return convertReading(token.reading, 'hiragana');
     }
+    if (readingMode === 'furigana') {
+      return convertReading(token.reading, 'furigana');
+    }
     return null;
   })();
 
