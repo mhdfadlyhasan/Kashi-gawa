@@ -2,7 +2,9 @@
 
 ## Overview
 
-This document tracks the phased development of Kashi-gawa. Each phase has a clear deliverable and builds on the previous one. No phase should be started until the prior phase is complete.
+This document tracks the phased development of Kashi-gawa. Each phase has a clear deliverable and builds on the previous one.
+
+> **Status: Phases 1–7 are implemented.** This file is kept as the original plan; the [Phase Status](#phase-status) table is the source of truth. Work done beyond this spec is listed under [Beyond the Original Plan](#beyond-the-original-plan).
 
 ---
 
@@ -11,11 +13,11 @@ This document tracks the phased development of Kashi-gawa. Each phase has a clea
 **Goal**: Initialize the project and create the basic shell UI.
 
 **Deliverables**:
-- [ ] Vite + React + TypeScript project scaffolded
-- [ ] Tailwind CSS configured
-- [ ] GitHub Actions workflow for GitHub Pages deployment
-- [ ] Basic layout: header, main content area, sidebar placeholder
-- [ ] App.tsx with basic state management (current song, library state)
+- [x] Vite + React + TypeScript project scaffolded
+- [x] Tailwind CSS configured
+- [x] GitHub Actions workflow for GitHub Pages deployment
+- [x] Basic layout: header, main content area, sidebar placeholder
+- [x] App.tsx with basic state management (current song, library state)
 
 **Files to create/modify**:
 - `package.json`, `vite.config.ts`, `tsconfig.json`, `tailwind.config.js`
@@ -29,11 +31,11 @@ This document tracks the phased development of Kashi-gawa. Each phase has a clea
 **Goal**: Connect to LRCLIB API and fetch lyrics.
 
 **Deliverables**:
-- [ ] `src/lib/lrclib.ts` — LRCLIB API client (search + get by ID)
-- [ ] `src/components/SearchBar.tsx` — Search input with live results
-- [ ] `src/hooks/useLyrics.ts` — Fetch logic + basic in-memory caching
-- [ ] Display plain text lyrics in `LyricDisplay.tsx` (no tokenization yet)
-- [ ] Save fetched lyrics to `localStorage` via `useLibrary`
+- [x] `src/lib/lrclib.ts` — LRCLIB API client (search + get by ID)
+- [x] `src/components/SearchBar.tsx` — Search input with live results
+- [x] `src/hooks/useLyrics.ts` — Fetch logic + basic in-memory caching
+- [x] Display plain text lyrics in `LyricDisplay.tsx` (no tokenization yet)
+- [x] Save fetched lyrics to `localStorage` via `useLibrary`
 
 **Files to create/modify**:
 - `src/lib/lrclib.ts`
@@ -49,11 +51,11 @@ This document tracks the phased development of Kashi-gawa. Each phase has a clea
 **Goal**: Build the sidebar library with localStorage persistence.
 
 **Deliverables**:
-- [ ] `src/hooks/useLibrary.ts` — Full CRUD for song library in localStorage
-- [ ] `src/components/SongLibrary.tsx` — Sidebar showing saved songs, ordered by `addedAt`
-- [ ] Click a library item to switch the active song
-- [ ] Add current song to library button
-- [ ] Delete song from library
+- [x] `src/hooks/useLibrary.ts` — Full CRUD for song library in localStorage
+- [x] `src/components/SongLibrary.tsx` — Sidebar showing saved songs, ordered by `addedAt`
+- [x] Click a library item to switch the active song
+- [x] Add current song to library button
+- [x] Delete song from library
 
 **localStorage Schema** (finalized):
 ```ts
@@ -79,11 +81,11 @@ interface LibraryItem {
 **Goal**: Integrate Kuromoji.js to split lyrics into tokens.
 
 **Deliverables**:
-- [ ] `src/hooks/useTokenizer.ts` — Kuromoji.js initialization and tokenization
-- [ ] `src/components/WordToken.tsx` — Render each token in a square box
-- [ ] `src/components/LyricDisplay.tsx` — Map tokens to `WordToken` components
-- [ ] Persist parsed tokens in `localStorage` so reopening is instant
-- [ ] Handle re-tokenization if tokens are null
+- [x] `src/hooks/useTokenizer.ts` — Kuromoji.js initialization and tokenization
+- [x] `src/components/WordToken.tsx` — Render each token in a square box
+- [x] `src/components/LyricDisplay.tsx` — Map tokens to `WordToken` components
+- [x] Persist parsed tokens in `localStorage` so reopening is instant
+- [x] Handle re-tokenization if tokens are null
 
 **Note**: For now, all verbs are green. Transitive/intransitive distinction is Phase 8.
 
@@ -99,8 +101,8 @@ interface LibraryItem {
 **Goal**: Apply grammar-based colors to tokens.
 
 **Deliverables**:
-- [ ] `src/lib/colorMap.ts` — Map Kuromoji POS tags to Tailwind color classes
-- [ ] Update `WordToken.tsx` to apply colors based on POS
+- [x] `src/lib/colorMap.ts` — Map Kuromoji POS tags to Tailwind color classes
+- [x] Update `WordToken.tsx` to apply colors based on POS
 
 **Color Rules**:
 | POS | Color | Tailwind Classes |
@@ -121,11 +123,11 @@ interface LibraryItem {
 **Goal**: Click a word to see grammar breakdown, reading, dictionary form, and meaning.
 
 **Deliverables**:
-- [ ] `src/components/BreakdownModal.tsx` — Popup modal component
-- [ ] `src/lib/jisho.ts` — Jisho API client
-- [ ] `src/lib/grammarDict.ts` — Local grammar pattern explanations (top 30 conjugations)
-- [ ] Extract dictionary form from Kuromoji token features
-- [ ] Show in modal: Surface form, Reading, Dictionary form, Grammar explanation, Meaning
+- [x] `src/components/BreakdownModal.tsx` — Popup modal component
+- [x] `src/lib/jisho.ts` — Jisho API client
+- [x] `src/lib/grammarDict.ts` — Local grammar pattern explanations (top 30 conjugations)
+- [x] Extract dictionary form from Kuromoji token features
+- [x] Show in modal: Surface form, Reading, Dictionary form, Grammar explanation, Meaning
 
 **Grammar Dictionary Starter** (~30 patterns):
 ```ts
@@ -175,12 +177,12 @@ interface LibraryItem {
 **Goal**: Make it feel like a real app.
 
 **Deliverables**:
-- [ ] Add Japanese font (Noto Sans JP) via Google Fonts
-- [ ] Responsive layout (mobile sidebar as drawer)
-- [ ] Smooth transitions and hover effects on tokens
-- [ ] Loading states (simple, no skeletons)
-- [ ] Dark mode toggle (optional, if time permits)
-- [ ] Final README.md for humans
+- [x] Add Japanese font (Noto Sans JP) via Google Fonts
+- [x] Responsive layout (mobile sidebar as drawer)
+- [x] Smooth transitions and hover effects on tokens
+- [x] Loading states (simple, no skeletons)
+- [ ] Dark mode toggle (optional, not implemented)
+- [x] Final README.md for humans
 
 **Files to create/modify**:
 - `src/styles/index.css`
@@ -198,7 +200,7 @@ interface LibraryItem {
 - Check `senses[].parts_of_speech[]` for "Transitive verb" or "Intransitive verb"
 - Update `colorMap.ts`: Green for transitive, Blue for intransitive
 
-**Not started until Phase 7 is complete.**
+**Phase 7 is complete, so this phase is ready to start. Not yet started.**
 
 ---
 
@@ -206,21 +208,39 @@ interface LibraryItem {
 
 | Phase | Status | Date Completed |
 |-------|--------|----------------|
-| P1: Skeleton | ⬜ Not started | — |
-| P2: Search & Fetch | ⬜ Not started | — |
-| P3: Library | ⬜ Not started | — |
-| P4: Tokenization | ⬜ Not started | — |
-| P5: Color Coding | ⬜ Not started | — |
-| P6: Breakdown Modal | ⬜ Not started | — |
-| P7: Polish | ⬜ Not started | — |
+| P1: Skeleton | ✅ Done | 2026-06 |
+| P2: Search & Fetch | ✅ Done | 2026-06 |
+| P3: Library | ✅ Done | 2026-06 |
+| P4: Tokenization | ✅ Done | 2026-06 |
+| P5: Color Coding | ✅ Done | 2026-06 |
+| P6: Breakdown Modal | ✅ Done | 2026-06 |
+| P7: Polish | ✅ Done (dark mode skipped) | 2026-06 |
 | P8: Transitivity | ⬜ Not started | — |
+
+---
+
+## Beyond the Original Plan
+
+Features added after the original phases, now part of the shipped app:
+
+- **Reading modes** — normal, hiragana, katakana, furigana, and romaji (`src/lib/kana.ts`)
+- **Compact breakdown mode** — inline sticky panel alongside the popup modal
+- **Edit mode** — manually merge adjacent tokens or split a token by clicking between characters
+- **Re-parse action** — re-run tokenization (with confirmation) when edits go wrong
+- **Toast notifications** — error surfacing via `src/lib/toast.ts`
+- **Welcome modal** — first-visit onboarding, dismissed state persisted
+- **Mobile sidebar drawer** — responsive layout
+- **Dictionary fallback chain** — JMDict → Core 1000 → JLPT Vocab API → Wiktionary
+- **Tooling** — ESLint, Prettier, typecheck, and GitHub Actions CI
+
+Remaining gaps are tracked in the README ("Known Gaps").
 
 ---
 
 ## Notes
 
 - All API calls are browser-side. No backend.
-- No error handling anywhere. Assume happy path.
-- No tests. Manual testing only.
+- Errors are surfaced with toast notifications; there are no error boundaries or retry logic.
+- No automated tests yet. Verify with `npm run lint`, `npm run typecheck`, and manual testing.
 - No analytics, no auth, no tracking.
 - Keep bundle size small. Tree-shake unused Tailwind classes.
