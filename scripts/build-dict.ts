@@ -34,9 +34,7 @@ async function fetchPage(page: number): Promise<DictEntry[]> {
     if (!firstJp) continue;
     const word = firstJp.word || firstJp.reading;
     const reading = firstJp.reading;
-    const meanings = item.senses
-      .flatMap((s) => s.english_definitions)
-      .slice(0, 3);
+    const meanings = item.senses.flatMap((s) => s.english_definitions).slice(0, 3);
     if (word && meanings.length > 0) {
       entries.push({ word, reading, meanings });
     }

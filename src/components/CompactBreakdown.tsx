@@ -29,7 +29,9 @@ export const CompactBreakdown: React.FC<CompactBreakdownProps> = ({
             {token.surface_form}
           </div>
           {displayedReading && (
-            <div className="text-sm text-gray-500 whitespace-nowrap flex-shrink-0">{displayedReading}</div>
+            <div className="text-sm text-gray-500 whitespace-nowrap flex-shrink-0">
+              {displayedReading}
+            </div>
           )}
           {breakdown?.dictionaryForm && breakdown.dictionaryForm !== token.surface_form && (
             <div className="text-sm text-gray-700 whitespace-nowrap flex-shrink-0">
@@ -55,9 +57,7 @@ export const CompactBreakdown: React.FC<CompactBreakdownProps> = ({
       {breakdown ? (
         <div className="mt-2 flex items-center gap-2 pl-2 overflow-hidden">
           <a
-            href={`https://jisho.org/search/${encodeURIComponent(
-              breakdown.dictionaryForm
-            )}`}
+            href={`https://jisho.org/search/${encodeURIComponent(breakdown.dictionaryForm)}`}
             target="_blank"
             rel="noopener noreferrer"
             className="text-xs text-blue-600 hover:text-blue-800 underline flex-shrink-0"

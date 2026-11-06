@@ -32,8 +32,12 @@ export const SearchBar: React.FC<SearchBarProps> = ({
 
   const placeholder = readingMode === 'romaji' ? 'kyokumei wo kensaku...' : '曲名を検索...';
   const searchLabel = isLoading
-    ? (readingMode === 'romaji' ? 'kensaku chuu...' : '検索中...')
-    : (readingMode === 'romaji' ? 'kensaku' : '検索');
+    ? readingMode === 'romaji'
+      ? 'kensaku chuu...'
+      : '検索中...'
+    : readingMode === 'romaji'
+      ? 'kensaku'
+      : '検索';
   const loadingLabel = readingMode === 'romaji' ? 'kensaku chuu...' : '検索中...';
   const selectingLabel = readingMode === 'romaji' ? 'yomikomi chuu...' : '読み込み中...';
 

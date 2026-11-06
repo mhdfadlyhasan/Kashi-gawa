@@ -6,10 +6,7 @@ interface ReadingModeToggleProps {
   onChange: (mode: ReadingMode) => void;
 }
 
-export const ReadingModeToggle: React.FC<ReadingModeToggleProps> = ({
-  readingMode,
-  onChange,
-}) => {
+export const ReadingModeToggle: React.FC<ReadingModeToggleProps> = ({ readingMode, onChange }) => {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 

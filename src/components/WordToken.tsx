@@ -39,16 +39,13 @@ export const WordToken: React.FC<WordTokenProps> = ({
     return null;
   })();
 
-  const displayText = readingMode === 'romaji'
-    ? convertReading(token.reading || token.surface_form, 'romaji')
-    : token.surface_form;
+  const displayText =
+    readingMode === 'romaji'
+      ? convertReading(token.reading || token.surface_form, 'romaji')
+      : token.surface_form;
 
   if (isPunctuation) {
-    return (
-      <span className="inline-block text-base font-medium px-0.5">
-        {token.surface_form}
-      </span>
-    );
+    return <span className="inline-block text-base font-medium px-0.5">{token.surface_form}</span>;
   }
 
   if (isSplitMode && chars.length > 1 && readingMode !== 'romaji') {
@@ -91,9 +88,7 @@ export const WordToken: React.FC<WordTokenProps> = ({
         className={`inline-flex flex-col items-center px-2 py-1 border rounded-md font-medium transition hover:opacity-80 hover:shadow-sm ${colorClasses}`}
       >
         {displayReading && (
-          <span className="text-[9px] text-gray-500 leading-tight mb-0">
-            {displayReading}
-          </span>
+          <span className="text-[9px] text-gray-500 leading-tight mb-0">{displayReading}</span>
         )}
         <span className="text-base leading-tight">{displayText}</span>
       </button>

@@ -15,7 +15,15 @@ interface LyricDisplayProps {
   setSelectedToken: (token: Token | null) => void;
 }
 
-export const LyricDisplay: React.FC<LyricDisplayProps> = ({ lines, onTokensChange, readingMode, isEditMode, detailMode, selectedToken, setSelectedToken }) => {
+export const LyricDisplay: React.FC<LyricDisplayProps> = ({
+  lines,
+  onTokensChange,
+  readingMode,
+  isEditMode,
+  detailMode,
+  selectedToken,
+  setSelectedToken,
+}) => {
   const [splitTokenKey, setSplitTokenKey] = useState<string | null>(null);
 
   // Close split mode / compact panel on Escape

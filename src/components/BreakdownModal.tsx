@@ -10,11 +10,7 @@ interface BreakdownModalProps {
   readingMode: ReadingMode;
 }
 
-export const BreakdownModal: React.FC<BreakdownModalProps> = ({
-  token,
-  onClose,
-  readingMode,
-}) => {
+export const BreakdownModal: React.FC<BreakdownModalProps> = ({ token, onClose, readingMode }) => {
   const breakdown = useWordBreakdown(token);
 
   const displayedReading = token.reading
@@ -22,13 +18,8 @@ export const BreakdownModal: React.FC<BreakdownModalProps> = ({
     : '';
 
   return (
-    <div
-      className="fixed inset-0 z-50 bg-black/30 overflow-y-auto"
-      onClick={onClose}
-    >
-      <div
-        className="min-h-screen flex items-center justify-center p-4"
-      >
+    <div className="fixed inset-0 z-50 bg-black/30 overflow-y-auto" onClick={onClose}>
+      <div className="min-h-screen flex items-center justify-center p-4">
         <div
           className="bg-white rounded-xl shadow-2xl max-w-sm md:max-w-md w-full p-6 relative"
           onClick={(e) => e.stopPropagation()}
@@ -42,14 +33,8 @@ export const BreakdownModal: React.FC<BreakdownModalProps> = ({
 
           <div className="text-center mb-6">
             <div className="text-3xl font-bold mb-2">{token.surface_form}</div>
-            {displayedReading && (
-              <div className="text-lg text-gray-500">
-                {displayedReading}
-              </div>
-            )}
-            <div className="text-sm text-gray-400 mt-1">
-              {getPosLabel(token.pos)}
-            </div>
+            {displayedReading && <div className="text-lg text-gray-500">{displayedReading}</div>}
+            <div className="text-sm text-gray-400 mt-1">{getPosLabel(token.pos)}</div>
           </div>
 
           {breakdown ? (

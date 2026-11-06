@@ -21,12 +21,10 @@ export function useWordBreakdown(token: Token | null): WordBreakdown | null {
       }
       if (cancelled) return;
 
-      const meanings =
-        jisho?.senses.flatMap((s) => s.english_definitions).slice(0, 5) || [];
+      const meanings = jisho?.senses.flatMap((s) => s.english_definitions).slice(0, 5) || [];
 
       const matchedWord = jisho?.japanese[0]?.word;
-      const dictionaryForm =
-        matchedWord || searchForm || token.surface_form;
+      const dictionaryForm = matchedWord || searchForm || token.surface_form;
 
       setBreakdown({
         surfaceForm: token.surface_form,

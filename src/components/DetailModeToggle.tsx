@@ -6,10 +6,7 @@ interface DetailModeToggleProps {
   onChange: (mode: DetailMode) => void;
 }
 
-export const DetailModeToggle: React.FC<DetailModeToggleProps> = ({
-  detailMode,
-  onChange,
-}) => {
+export const DetailModeToggle: React.FC<DetailModeToggleProps> = ({ detailMode, onChange }) => {
   const modes: { value: DetailMode; label: string }[] = [
     { value: 'popup', label: 'Popup' },
     { value: 'compact', label: 'Compact' },

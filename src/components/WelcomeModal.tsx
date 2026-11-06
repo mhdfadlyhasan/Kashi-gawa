@@ -35,7 +35,8 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({ onClose }) => {
             <div>
               <h3 className="font-semibold text-gray-900">Search for a song</h3>
               <p className="text-sm text-gray-500">
-                Use the search bar at the top to find a song by name or artist. Results are pulled from the LRCLIB database.
+                Use the search bar at the top to find a song by name or artist. Results are pulled
+                from the LRCLIB database.
               </p>
             </div>
           </div>
@@ -47,7 +48,8 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({ onClose }) => {
             <div>
               <h3 className="font-semibold text-gray-900">Add a song</h3>
               <p className="text-sm text-gray-500">
-                Click a search result to add it to your library. The lyrics will be automatically fetched and saved.
+                Click a search result to add it to your library. The lyrics will be automatically
+                fetched and saved.
               </p>
             </div>
           </div>
@@ -59,7 +61,8 @@ export const WelcomeModal: React.FC<WelcomeModalProps> = ({ onClose }) => {
             <div>
               <h3 className="font-semibold text-gray-900">View & interact</h3>
               <p className="text-sm text-gray-500">
-                Open the song from the sidebar to see color-coded, tokenized lyrics. Click any word to see its grammar breakdown, reading, and meaning.
+                Open the song from the sidebar to see color-coded, tokenized lyrics. Click any word
+                to see its grammar breakdown, reading, and meaning.
               </p>
             </div>
           </div>

@@ -48,14 +48,30 @@ function loadJmdict(): Promise<JmdictIndex> {
 
 // Maps godan e-column endings back to u-column for potential forms
 const GODAN_E_TO_U: Record<string, string> = {
-  'け': 'く', 'げ': 'ぐ', 'せ': 'す', 'て': 'つ', 'ね': 'ぬ',
-  'へ': 'ふ', 'め': 'む', 'れ': 'る', 'べ': 'ぶ', 'え': 'う',
+  け: 'く',
+  げ: 'ぐ',
+  せ: 'す',
+  て: 'つ',
+  ね: 'ぬ',
+  へ: 'ふ',
+  め: 'む',
+  れ: 'る',
+  べ: 'ぶ',
+  え: 'う',
 };
 
 // Maps godan a-column endings back to u-column for passive/causative forms
 const GODAN_A_TO_U: Record<string, string> = {
-  'か': 'く', 'が': 'ぐ', 'さ': 'す', 'た': 'つ', 'な': 'ぬ',
-  'は': 'ふ', 'ま': 'む', 'ら': 'る', 'ば': 'ぶ', 'わ': 'う',
+  か: 'く',
+  が: 'ぐ',
+  さ: 'す',
+  た: 'つ',
+  な: 'ぬ',
+  は: 'ふ',
+  ま: 'む',
+  ら: 'る',
+  ば: 'ぶ',
+  わ: 'う',
 };
 
 function* deconjugate(word: string): Generator<string> {
@@ -200,9 +216,7 @@ export async function searchJisho(word: string): Promise<JishoResult | null> {
       english_definitions: entry.definitions
         .slice(0, 3)
         .map((d: any) =>
-          typeof d.definition === 'string'
-            ? d.definition.replace(/<[^>]+>/g, '')
-            : ''
+          typeof d.definition === 'string' ? d.definition.replace(/<[^>]+>/g, '') : ''
         )
         .filter(Boolean),
       parts_of_speech: [entry.partOfSpeech].filter(Boolean),

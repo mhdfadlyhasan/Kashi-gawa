@@ -141,13 +141,15 @@ function App() {
     updateTokens(activeId, toks);
   }, [activeId, tokenizerReady, getSong, tokenizeLines, updateTokens, readingMode]);
 
-  const displayTitle = activeSong && readingMode === 'romaji' && activeSong.titleReading
-    ? activeSong.titleReading
-    : activeSong?.title;
+  const displayTitle =
+    activeSong && readingMode === 'romaji' && activeSong.titleReading
+      ? activeSong.titleReading
+      : activeSong?.title;
 
-  const displayArtist = activeSong && readingMode === 'romaji' && activeSong.artistReading
-    ? activeSong.artistReading
-    : activeSong?.artist;
+  const displayArtist =
+    activeSong && readingMode === 'romaji' && activeSong.artistReading
+      ? activeSong.artistReading
+      : activeSong?.artist;
 
   return (
     <div className="h-screen w-full flex flex-col bg-gray-50 overflow-hidden">
@@ -158,7 +160,13 @@ function App() {
           onClick={() => setSidebarOpen(!sidebarOpen)}
           aria-label="Toggle sidebar"
         >
-          <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <svg
+            className="w-5 h-5 text-gray-700"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            viewBox="0 0 24 24"
+          >
             <path strokeLinecap="round" strokeLinejoin="round" d="M3 12h18M3 6h18M3 18h18" />
           </svg>
         </button>
@@ -225,7 +233,9 @@ function App() {
             </div>
           ) : activeSong ? (
             <div>
-              <div className={`sticky top-0 z-10 bg-gray-50/95 backdrop-blur-sm mb-6 py-2 -mx-2 px-2 rounded-lg ${detailMode === 'compact' ? 'min-h-[120px]' : ''}`}>
+              <div
+                className={`sticky top-0 z-10 bg-gray-50/95 backdrop-blur-sm mb-6 py-2 -mx-2 px-2 rounded-lg ${detailMode === 'compact' ? 'min-h-[120px]' : ''}`}
+              >
                 {detailMode === 'compact' && selectedToken ? (
                   <CompactBreakdown
                     token={selectedToken}
@@ -247,8 +257,18 @@ function App() {
                         onClick={() => setIsEditMode(!isEditMode)}
                         title="Toggle edit mode"
                       >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"
+                          />
                         </svg>
                       </button>
                       <button

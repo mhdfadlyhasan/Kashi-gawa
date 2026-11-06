@@ -1,0 +1,6 @@
+node_modules
+dist
+public
+package-lock.json
+*.md
+src/lib/core1000Dict.ts
