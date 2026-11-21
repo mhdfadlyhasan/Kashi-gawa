@@ -43,6 +43,7 @@ export const KaraokeBar: React.FC<KaraokeBarProps> = ({
 
   const [linkInput, setLinkInput] = useState('');
   const [playerOpen, setPlayerOpen] = useState(true);
+  const [theater, setTheater] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const playerContainerRef = useRef<HTMLDivElement | null>(null);
 
@@ -218,6 +219,13 @@ export const KaraokeBar: React.FC<KaraokeBarProps> = ({
               {playerOpen ? 'Hide video' : 'Show video'}
             </button>
             <button
+              onClick={() => setTheater((prev) => !prev)}
+              className="px-2 py-1 border border-gray-200 rounded-lg hover:bg-gray-50 transition"
+              title="Toggle theater size"
+            >
+              {theater ? 'Small' : 'Theater'}
+            </button>
+            <button
               onClick={toggleFullscreen}
               className="px-2 py-1 border border-gray-200 rounded-lg hover:bg-gray-50 transition"
             >
@@ -238,11 +246,13 @@ export const KaraokeBar: React.FC<KaraokeBarProps> = ({
       {usingYouTube && (
         <div
           ref={playerContainerRef}
-          className={`overflow-hidden bg-black transition-all ${
+          className={`overflow-hidden bg-black ${
             isFullscreen
               ? 'mt-0 flex h-screen w-screen items-center justify-center rounded-none'
               : playerOpen
-                ? 'mt-2 w-full max-w-sm aspect-video rounded-lg'
+                ? `mt-2 mx-auto w-full aspect-video rounded-lg ${
+                    theater ? 'max-w-[calc(45vh_*_16_/_9)]' : 'max-w-sm'
+                  }`
                 : 'mt-0 h-0 w-0'
           }`}
         >

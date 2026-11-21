@@ -17,6 +17,8 @@ interface LyricDisplayProps {
   activeLineIdx?: number;
   activeTokenIdx?: number;
   useWordHighlighting?: boolean;
+  stickyOffset?: number;
+  headerRef?: React.RefObject<HTMLDivElement | null>;
 }
 
 const LyricDisplayComponent: React.FC<LyricDisplayProps> = ({
@@ -31,6 +33,8 @@ const LyricDisplayComponent: React.FC<LyricDisplayProps> = ({
   activeLineIdx = -1,
   activeTokenIdx = -1,
   useWordHighlighting = false,
+  stickyOffset = 0,
+  headerRef,
 }) => {
   const [splitTokenKey, setSplitTokenKey] = useState<string | null>(null);
   const lineRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -51,9 +55,18 @@ const LyricDisplayComponent: React.FC<LyricDisplayProps> = ({
   useEffect(() => {
     if (!isKaraoke || activeLineIdx < 0) return;
     if (Date.now() < manualScrollUntil.current) return;
+
     const line = lineRefs.current[activeLineIdx];
-    line?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }, [isKaraoke, activeLineIdx]);
+    const container = line?.closest('main');
+    if (!line || !container) return;
+
+    const headerBottom = headerRef?.current?.getBoundingClientRect().bottom;
+    const targetTop = (headerBottom ?? container.getBoundingClientRect().top) + 16;
+    const delta = line.getBoundingClientRect().top - targetTop;
+    if (Math.abs(delta) < 2) return;
+
+    container.scrollTo({ top: container.scrollTop + delta, behavior: 'smooth' });
+  }, [isKaraoke, activeLineIdx, stickyOffset, headerRef]);
 
   // Close split mode / compact panel on Escape
   useEffect(() => {
@@ -144,46 +157,55 @@ const LyricDisplayComponent: React.FC<LyricDisplayProps> = ({
               ref={(el) => {
                 lineRefs.current[lineIdx] = el;
               }}
-              className={`flex flex-wrap gap-1 items-center py-1.5 scroll-mt-28 transition-all ${
-                isActiveLine ? 'bg-sky-100' : isEven ? 'bg-white' : 'bg-gray-200'
-              } ${isPastLine ? 'opacity-40' : ''} ${!isLast ? 'border-b border-gray-100' : ''}`}
+              className={`flex flex-wrap gap-1 items-center px-[2%] first:rounded-t-xl last:rounded-b-xl transition-[background-color,opacity,box-shadow,transform] ${
+                isActiveLine
+                  ? 'relative z-10 bg-sky-100 py-2 md:py-3 shadow-lg ring-2 ring-inset ring-sky-300/70 rounded-lg'
+                  : `py-1.5 ${isEven ? 'bg-white' : 'bg-gray-200'}`
+              } ${isPastLine ? 'opacity-40' : ''} ${!isLast && !isActiveLine ? 'border-b border-gray-100' : ''}`}
             >
-              {line.map((token, tokenIdx) => {
-                const tokenKey = `${lineIdx}-${tokenIdx}`;
-                const isSplitMode = splitTokenKey === tokenKey;
-                return (
-                  <React.Fragment key={tokenKey}>
-                    <WordToken
-                      token={token}
-                      readingMode={readingMode}
-                      isSplitMode={isSplitMode}
-                      isEditMode={isEditMode}
-                      karaokeState={karaokeStateAt(tokenIdx)}
-                      onSplit={(splitAt) => handleSplit(lineIdx, tokenIdx, splitAt)}
-                      onClick={() => {
-                        if (isSplitMode) {
-                          setSplitTokenKey(null);
-                        } else {
-                          setSelectedToken(selectedToken === token ? null : token);
-                        }
-                      }}
-                      onEnterSplitMode={() => {
-                        setSplitTokenKey(tokenKey);
-                      }}
-                    />
-                    {tokenIdx < line.length - 1 && (
-                      <div
-                        className={`relative w-4 md:w-1 h-8 md:h-6 flex items-center justify-center cursor-pointer hover:bg-gray-100 rounded transition ${isEditMode ? 'flex' : 'hidden'}`}
-                        onClick={() => handleMerge(lineIdx, tokenIdx)}
-                      >
-                        <span className="text-[10px] leading-none text-gray-400 bg-white border border-gray-200 rounded px-1 py-0.5 shadow-sm z-10 opacity-100">
-                          +
-                        </span>
-                      </div>
-                    )}
-                  </React.Fragment>
-                );
-              })}
+              <div
+                className={`flex w-full flex-wrap items-center gap-1 origin-center transition-transform ${
+                  isActiveLine ? 'scale-[1.03]' : ''
+                }`}
+              >
+                {line.map((token, tokenIdx) => {
+                  const tokenKey = `${lineIdx}-${tokenIdx}`;
+                  const isSplitMode = splitTokenKey === tokenKey;
+                  return (
+                    <React.Fragment key={tokenKey}>
+                      <WordToken
+                        token={token}
+                        readingMode={readingMode}
+                        isSplitMode={isSplitMode}
+                        isEditMode={isEditMode}
+                        karaokeState={karaokeStateAt(tokenIdx)}
+                        size={isActiveLine ? 'large' : 'normal'}
+                        onSplit={(splitAt) => handleSplit(lineIdx, tokenIdx, splitAt)}
+                        onClick={() => {
+                          if (isSplitMode) {
+                            setSplitTokenKey(null);
+                          } else {
+                            setSelectedToken(selectedToken === token ? null : token);
+                          }
+                        }}
+                        onEnterSplitMode={() => {
+                          setSplitTokenKey(tokenKey);
+                        }}
+                      />
+                      {tokenIdx < line.length - 1 && (
+                        <div
+                          className={`relative w-4 md:w-1 h-8 md:h-6 flex items-center justify-center cursor-pointer hover:bg-gray-100 rounded transition ${isEditMode ? 'flex' : 'hidden'}`}
+                          onClick={() => handleMerge(lineIdx, tokenIdx)}
+                        >
+                          <span className="text-[10px] leading-none text-gray-400 bg-white border border-gray-200 rounded px-1 py-0.5 shadow-sm z-10 opacity-100">
+                            +
+                          </span>
+                        </div>
+                      )}
+                    </React.Fragment>
+                  );
+                })}
+              </div>
             </div>
           );
         })}

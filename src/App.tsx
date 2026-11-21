@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { LibraryItem, TimedToken, Token } from './types';
 import { useLyrics } from './hooks/useLyrics';
 import { useLibrary } from './hooks/useLibrary';
@@ -65,6 +65,18 @@ function App() {
   const [karaokeElapsedMs, setKaraokeElapsedMs] = useState(0);
 
   const activeSong = activeId ? getSong(activeId) : null;
+  const headerRef = useRef<HTMLDivElement | null>(null);
+  const [headerHeight, setHeaderHeight] = useState(0);
+
+  useEffect(() => {
+    const element = headerRef.current;
+    if (!element) return;
+    const update = () => setHeaderHeight(element.getBoundingClientRect().height);
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [activeSong?.id]);
 
   const karaokeTiming = useMemo(() => {
     if (!isKaraoke || !activeSong?.syncedLyrics || tokens.length === 0) {
@@ -371,7 +383,7 @@ function App() {
         </aside>
 
         {/* Lyric Display */}
-        <main className="flex-1 overflow-y-auto px-2 py-4 md:px-4 md:py-8">
+        <main className="flex-1 overflow-y-auto px-2 pb-4 md:px-4 md:pb-8">
           {isSelecting ? (
             <div className="flex items-center justify-center h-full text-gray-400">
               <div className="text-center">
@@ -382,7 +394,8 @@ function App() {
           ) : activeSong ? (
             <div>
               <div
-                className={`sticky top-0 z-10 bg-gray-50/95 backdrop-blur-sm mb-6 py-2 -mx-2 px-2 rounded-lg ${detailMode === 'compact' ? 'min-h-[120px]' : ''}`}
+                ref={headerRef}
+                className={`sticky top-0 z-30 bg-gray-50/95 backdrop-blur-sm mb-6 pt-4 md:pt-8 pb-2 -mx-2 px-2 rounded-lg ${detailMode === 'compact' ? 'min-h-[120px]' : ''}`}
               >
                 {detailMode === 'compact' && selectedToken ? (
                   <CompactBreakdown
@@ -471,6 +484,8 @@ function App() {
                   activeLineIdx={activePosition?.lineIdx ?? -1}
                   activeTokenIdx={activePosition?.tokenIdx ?? -1}
                   useWordHighlighting={hasWordTiming}
+                  stickyOffset={headerHeight}
+                  headerRef={headerRef}
                   onTokensChange={handleTokensChange}
                 />
               ) : (

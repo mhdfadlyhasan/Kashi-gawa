@@ -10,6 +10,7 @@ interface WordTokenProps {
   isSplitMode: boolean;
   isEditMode?: boolean;
   karaokeState?: KaraokeTokenState | null;
+  size?: 'normal' | 'large';
   onSplit?: (index: number) => void;
   onEnterSplitMode?: () => void;
 }
@@ -20,6 +21,7 @@ export const WordToken: React.FC<WordTokenProps> = ({
   readingMode,
   isSplitMode,
   karaokeState,
+  size = 'normal',
   onSplit,
 }) => {
   const grammarType = getGrammarType(token.pos);
@@ -32,6 +34,10 @@ export const WordToken: React.FC<WordTokenProps> = ({
       : karaokeState === 'past'
         ? 'opacity-40'
         : '';
+  const isLarge = size === 'large';
+  const mainTextClass = isLarge ? 'text-lg' : 'text-base';
+  const readingClass = isLarge ? 'text-[10px]' : 'text-[9px]';
+  const paddingClass = isLarge ? 'px-2.5 py-1.5' : 'px-2 py-1';
 
   const displayReading = (() => {
     if (!token.reading) return null;
@@ -55,7 +61,7 @@ export const WordToken: React.FC<WordTokenProps> = ({
   if (isPunctuation) {
     return (
       <span
-        className={`inline-block text-base font-medium px-0.5 transition-opacity ${karaokeClasses}`}
+        className={`inline-block font-medium px-0.5 transition-opacity ${mainTextClass} ${karaokeClasses}`}
       >
         {token.surface_form}
       </span>
@@ -65,7 +71,7 @@ export const WordToken: React.FC<WordTokenProps> = ({
   if (isSplitMode && chars.length > 1 && readingMode !== 'romaji') {
     return (
       <span
-        className={`inline-block px-2 py-1 border rounded-md text-base font-medium cursor-pointer hover:opacity-80 hover:shadow-sm transition ${karaokeClasses} ${colorClasses}`}
+        className={`inline-block border rounded-md font-medium cursor-pointer hover:opacity-80 hover:shadow-sm transition ${paddingClass} ${mainTextClass} ${karaokeClasses} ${colorClasses}`}
       >
         {chars.map((char, i) => (
           <React.Fragment key={i}>
@@ -99,12 +105,14 @@ export const WordToken: React.FC<WordTokenProps> = ({
     <span className="relative inline-block">
       <button
         onClick={onClick}
-        className={`inline-flex flex-col items-center px-2 py-1 border rounded-md font-medium transition hover:opacity-80 hover:shadow-sm ${karaokeClasses} ${colorClasses}`}
+        className={`inline-flex flex-col items-center border rounded-md font-medium transition hover:opacity-80 hover:shadow-sm ${paddingClass} ${karaokeClasses} ${colorClasses}`}
       >
         {displayReading && (
-          <span className="text-[9px] text-gray-500 leading-tight mb-0">{displayReading}</span>
+          <span className={`${readingClass} text-gray-500 leading-tight mb-0`}>
+            {displayReading}
+          </span>
         )}
-        <span className="text-base leading-tight">{displayText}</span>
+        <span className={`${mainTextClass} leading-tight`}>{displayText}</span>
       </button>
     </span>
   );
