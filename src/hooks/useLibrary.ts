@@ -59,6 +59,10 @@ export function useLibrary() {
     );
   }, []);
 
+  const updateSong = useCallback((id: number, patch: Partial<LibraryItem>) => {
+    setLibrary((prev) => prev.map((s) => (s.id === id ? { ...s, ...patch } : s)));
+  }, []);
+
   const getSong = useCallback((id: number) => library.find((s) => s.id === id) || null, [library]);
 
   return {
@@ -67,6 +71,7 @@ export function useLibrary() {
     removeSong,
     updateTokens,
     updateReadings,
+    updateSong,
     getSong,
   };
 }

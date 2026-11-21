@@ -33,7 +33,52 @@ export interface LibraryItem {
   tokens: Token[][] | null;
   titleReading?: string;
   artistReading?: string;
+  syncedLyrics?: string | null;
+  duration?: number;
+  tokensSource?: 'plain' | 'synced';
+  youtubeId?: string;
+  youtubeOffsetMs?: number;
 }
+
+export interface LrcWord {
+  timeMs: number;
+  text: string;
+}
+
+export interface LrcLine {
+  timeMs: number;
+  text: string;
+  words?: LrcWord[];
+}
+
+export interface LrcEntry {
+  startMs: number;
+  endMs: number;
+  text: string;
+  words?: LrcWord[];
+}
+
+export interface TimedLine {
+  startMs: number;
+  endMs: number;
+  tokens: Token[];
+  words?: LrcWord[];
+}
+
+export interface TimedToken {
+  lineIdx: number;
+  tokenIdx: number;
+  startMs: number;
+  endMs: number;
+}
+
+export interface KaraokePosition {
+  lineIdx: number;
+  tokenIdx: number;
+  tokenProgress: number;
+}
+
+export type KaraokeTokenState = 'past' | 'active' | 'upcoming';
 
 export interface WordBreakdown {
   surfaceForm: string;

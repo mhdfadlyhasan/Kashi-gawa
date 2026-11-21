@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
-import { LibraryItem, Token } from './types';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { LibraryItem, TimedToken, Token } from './types';
 import { useLyrics } from './hooks/useLyrics';
 import { useLibrary } from './hooks/useLibrary';
-import { useTokenizer, tokenizeText } from './hooks/useTokenizer';
+import { useTokenizer, tokenizeText, tokenizeLinesText } from './hooks/useTokenizer';
 import { useReadingMode } from './hooks/useReadingMode';
 import { useFirstVisit } from './hooks/useFirstVisit';
 import { useDetailMode } from './hooks/useDetailMode';
@@ -12,18 +12,46 @@ import { LyricDisplay } from './components/LyricDisplay';
 import { ReadingModeToggle } from './components/ReadingModeToggle';
 import { DetailModeToggle } from './components/DetailModeToggle';
 import { CompactBreakdown } from './components/CompactBreakdown';
+import { KaraokeBar } from './components/KaraokeBar';
 import { WelcomeModal } from './components/WelcomeModal';
 import { ToastContainer } from './components/ToastContainer';
 import { kanaToRomaji } from './lib/kana';
+import { lrcHasWordTiming, parseLrc, toTimedEntries } from './lib/lrc';
+import { buildTimedLines, buildTimedTokens, findActive, getDurationMs } from './lib/karaoke';
+import { parseYouTubeId } from './lib/youtube';
+import { showToast } from './lib/toast';
 
 function tokensToRomaji(tokens: Token[]): string {
   return tokens.map((t) => kanaToRomaji(t.reading || t.surface_form)).join(' ');
 }
 
+async function tokenizeSyncedLyrics(syncedLyrics: string): Promise<Token[][]> {
+  const entries = toTimedEntries(parseLrc(syncedLyrics));
+  const result: Token[][] = [];
+  for (const entry of entries) {
+    const text = entry.text.trim();
+    if (!text) continue;
+    result.push(await tokenizeText(text));
+  }
+  return result;
+}
+
+async function tokenizeSongLyrics(lyrics: {
+  plainLyrics: string;
+  syncedLyrics?: string | null;
+}): Promise<{ tokens: Token[][]; source: 'plain' | 'synced' }> {
+  if (lyrics.syncedLyrics && lyrics.syncedLyrics.trim()) {
+    const syncedTokens = await tokenizeSyncedLyrics(lyrics.syncedLyrics);
+    if (syncedTokens.length > 0) return { tokens: syncedTokens, source: 'synced' };
+  }
+  return { tokens: await tokenizeLinesText(lyrics.plainLyrics), source: 'plain' };
+}
+
 function App() {
   const { results, isLoading, isSelecting, search, selectTrack, clearResults } = useLyrics();
-  const { library, addSong, removeSong, updateTokens, updateReadings, getSong } = useLibrary();
-  const { ready: tokenizerReady, tokenizeLines } = useTokenizer();
+  const { library, addSong, removeSong, updateTokens, updateReadings, updateSong, getSong } =
+    useLibrary();
+  const { ready: tokenizerReady } = useTokenizer();
   const { readingMode, setReadingMode } = useReadingMode();
   const { detailMode, setDetailMode } = useDetailMode();
   const [isFirstVisit, markSeen] = useFirstVisit();
@@ -33,8 +61,33 @@ function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedToken, setSelectedToken] = useState<Token | null>(null);
+  const [isKaraoke, setIsKaraoke] = useState(false);
+  const [karaokeElapsedMs, setKaraokeElapsedMs] = useState(0);
 
   const activeSong = activeId ? getSong(activeId) : null;
+
+  const karaokeTiming = useMemo(() => {
+    if (!isKaraoke || !activeSong?.syncedLyrics || tokens.length === 0) {
+      return { timed: [] as TimedToken[], durationMs: 0 };
+    }
+    const timedLines = buildTimedLines(
+      activeSong.syncedLyrics,
+      tokens,
+      (activeSong.duration ?? 0) * 1000
+    );
+    const timed = buildTimedTokens(timedLines);
+    return { timed, durationMs: getDurationMs(activeSong.duration, timed) };
+  }, [isKaraoke, activeSong?.syncedLyrics, activeSong?.duration, tokens]);
+
+  const activePosition = useMemo(
+    () => (isKaraoke ? findActive(karaokeElapsedMs, karaokeTiming.timed) : null),
+    [isKaraoke, karaokeElapsedMs, karaokeTiming.timed]
+  );
+
+  const hasWordTiming = useMemo(() => {
+    if (!isKaraoke || !activeSong?.syncedLyrics) return false;
+    return lrcHasWordTiming(activeSong.syncedLyrics);
+  }, [isKaraoke, activeSong?.syncedLyrics]);
 
   // Load and activate a song by ID
   const loadAndActivateSong = useCallback(
@@ -59,17 +112,25 @@ function App() {
         plainLyrics: track.plainLyrics,
         titleReading,
         artistReading,
+        syncedLyrics: track.syncedLyrics,
+        duration: track.duration,
       };
       addSong(item);
       setActiveId(track.id);
+      setIsKaraoke(false);
+      setKaraokeElapsedMs(0);
 
       if (tokenizerReady) {
-        const toks = await tokenizeLines(track.plainLyrics);
+        const { tokens: toks, source } = await tokenizeSongLyrics({
+          plainLyrics: track.plainLyrics,
+          syncedLyrics: track.syncedLyrics,
+        });
         setTokens(toks);
         updateTokens(track.id, toks);
+        updateSong(track.id, { tokensSource: source });
       }
     },
-    [selectTrack, addSong, tokenizerReady, tokenizeLines, updateTokens]
+    [selectTrack, addSong, tokenizerReady, updateTokens, updateSong]
   );
 
   // Load default song on first visit
@@ -91,12 +152,15 @@ function App() {
   const handleSelectLibraryItem = useCallback(
     async (song: LibraryItem) => {
       setActiveId(song.id);
+      setIsKaraoke(false);
+      setKaraokeElapsedMs(0);
       if (song.tokens && song.tokens.length > 0) {
         setTokens(song.tokens);
       } else if (tokenizerReady) {
-        const toks = await tokenizeLines(song.plainLyrics);
+        const { tokens: toks, source } = await tokenizeSongLyrics(song);
         setTokens(toks);
         updateTokens(song.id, toks);
+        updateSong(song.id, { tokensSource: source });
       }
 
       // Compute readings if missing
@@ -108,7 +172,7 @@ function App() {
         updateReadings(song.id, titleReading, artistReading);
       }
     },
-    [tokenizerReady, tokenizeLines, updateTokens, updateReadings]
+    [tokenizerReady, updateTokens, updateReadings, updateSong]
   );
 
   // Tokenize current track when tokenizer becomes ready
@@ -117,11 +181,12 @@ function App() {
     const song = getSong(activeId);
     if (!song || (song.tokens && song.tokens.length > 0)) return;
 
-    tokenizeLines(song.plainLyrics).then((toks) => {
+    tokenizeSongLyrics(song).then(({ tokens: toks, source }) => {
       setTokens(toks);
       updateTokens(activeId, toks);
+      updateSong(activeId, { tokensSource: source });
     });
-  }, [activeId, tokenizerReady, tokenizeLines, updateTokens, getSong]);
+  }, [activeId, tokenizerReady, updateTokens, updateSong, getSong]);
 
   const handleReparse = useCallback(async () => {
     if (!activeId || !tokenizerReady) return;
@@ -136,10 +201,93 @@ function App() {
     if (!confirmed) return;
 
     setTokens([]);
-    const toks = await tokenizeLines(song.plainLyrics);
+    const { tokens: toks, source } = await tokenizeSongLyrics(song);
     setTokens(toks);
     updateTokens(activeId, toks);
-  }, [activeId, tokenizerReady, getSong, tokenizeLines, updateTokens, readingMode]);
+    updateSong(activeId, { tokensSource: source });
+  }, [activeId, tokenizerReady, getSong, updateTokens, updateSong, readingMode]);
+
+  const handleTokensChange = useCallback(
+    (newLines: Token[][]) => {
+      setTokens(newLines);
+      if (activeId) updateTokens(activeId, newLines);
+    },
+    [activeId, updateTokens]
+  );
+
+  const handleToggleKaraoke = useCallback(async () => {
+    if (isKaraoke) {
+      setIsKaraoke(false);
+      return;
+    }
+
+    const song = activeSong;
+    if (!song) return;
+    if (tokens.length === 0) {
+      showToast('Lyrics are still parsing — try again in a moment');
+      return;
+    }
+
+    let syncedLyrics = song.syncedLyrics ?? null;
+    if (!syncedLyrics) {
+      const track = await selectTrack(song.id);
+      if (!track?.syncedLyrics) {
+        showToast('This song has no synced lyrics — karaoke unavailable');
+        return;
+      }
+      syncedLyrics = track.syncedLyrics;
+      updateSong(song.id, { syncedLyrics, duration: track.duration });
+    }
+
+    if (song.tokensSource !== 'synced') {
+      const confirmed = window.confirm(
+        readingMode === 'romaji'
+          ? 'Karaoke uses the synced lyrics, which resets your manual word edits. Continue?'
+          : 'カラオケは同期歌詞を使用するため、単語の編集内容がリセットされます。続けますか？'
+      );
+      if (!confirmed) return;
+
+      const toks = await tokenizeSyncedLyrics(syncedLyrics);
+      if (toks.length === 0) {
+        showToast('Could not parse the synced lyrics');
+        return;
+      }
+      setTokens(toks);
+      updateTokens(song.id, toks);
+      updateSong(song.id, { tokensSource: 'synced' });
+    }
+
+    setKaraokeElapsedMs(0);
+    setIsKaraoke(true);
+  }, [isKaraoke, activeSong, tokens.length, selectTrack, updateSong, updateTokens, readingMode]);
+
+  const handleSetYouTube = useCallback(
+    (input: string) => {
+      if (!activeSong) return;
+      const trimmed = input.trim();
+      if (!trimmed) {
+        updateSong(activeSong.id, { youtubeId: undefined, youtubeOffsetMs: 0 });
+        setKaraokeElapsedMs(0);
+        return;
+      }
+      const id = parseYouTubeId(trimmed);
+      if (!id) {
+        showToast('Could not read that YouTube link');
+        return;
+      }
+      updateSong(activeSong.id, { youtubeId: id });
+      setKaraokeElapsedMs(0);
+    },
+    [activeSong, updateSong]
+  );
+
+  const handleOffsetChange = useCallback(
+    (ms: number) => {
+      if (!activeSong) return;
+      updateSong(activeSong.id, { youtubeOffsetMs: ms });
+    },
+    [activeSong, updateSong]
+  );
 
   const displayTitle =
     activeSong && readingMode === 'romaji' && activeSong.titleReading
@@ -253,6 +401,24 @@ function App() {
                     <div className="flex items-center gap-2 flex-shrink-0">
                       <DetailModeToggle detailMode={detailMode} onChange={setDetailMode} />
                       <button
+                        className={`p-2 rounded-lg border transition ${isKaraoke ? 'bg-sky-100 text-sky-700 border-sky-300' : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-transparent'}`}
+                        onClick={handleToggleKaraoke}
+                        title="Karaoke mode"
+                        aria-pressed={isKaraoke}
+                      >
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 18V5l12-2v13" />
+                          <circle cx="6" cy="18" r="3" />
+                          <circle cx="18" cy="16" r="3" />
+                        </svg>
+                      </button>
+                      <button
                         className={`p-2 rounded-lg border transition ${isEditMode ? 'bg-blue-100 text-blue-700 border-blue-300' : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-transparent'}`}
                         onClick={() => setIsEditMode(!isEditMode)}
                         title="Toggle edit mode"
@@ -281,6 +447,17 @@ function App() {
                     </div>
                   </div>
                 )}
+                {isKaraoke && (
+                  <KaraokeBar
+                    durationMs={karaokeTiming.durationMs}
+                    youtubeId={activeSong.youtubeId}
+                    youtubeOffsetMs={activeSong.youtubeOffsetMs ?? 0}
+                    onElapsedChange={setKaraokeElapsedMs}
+                    onSetYouTube={handleSetYouTube}
+                    onOffsetChange={handleOffsetChange}
+                    onClose={() => setIsKaraoke(false)}
+                  />
+                )}
               </div>
               {tokens.length > 0 ? (
                 <LyricDisplay
@@ -290,12 +467,11 @@ function App() {
                   detailMode={detailMode}
                   selectedToken={selectedToken}
                   setSelectedToken={setSelectedToken}
-                  onTokensChange={(newLines) => {
-                    setTokens(newLines);
-                    if (activeId) {
-                      updateTokens(activeId, newLines);
-                    }
-                  }}
+                  isKaraoke={isKaraoke}
+                  activeLineIdx={activePosition?.lineIdx ?? -1}
+                  activeTokenIdx={activePosition?.tokenIdx ?? -1}
+                  useWordHighlighting={hasWordTiming}
+                  onTokensChange={handleTokensChange}
                 />
               ) : (
                 <div className="text-gray-400">Parsing lyrics...</div>

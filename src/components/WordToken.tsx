@@ -1,5 +1,5 @@
 import React from 'react';
-import { Token } from '../types';
+import { KaraokeTokenState, Token } from '../types';
 import { getGrammarType, getColorClasses } from '../lib/colorMap';
 import { ReadingMode, convertReading } from '../lib/kana';
 
@@ -9,6 +9,7 @@ interface WordTokenProps {
   readingMode: ReadingMode;
   isSplitMode: boolean;
   isEditMode?: boolean;
+  karaokeState?: KaraokeTokenState | null;
   onSplit?: (index: number) => void;
   onEnterSplitMode?: () => void;
 }
@@ -18,12 +19,19 @@ export const WordToken: React.FC<WordTokenProps> = ({
   onClick,
   readingMode,
   isSplitMode,
+  karaokeState,
   onSplit,
 }) => {
   const grammarType = getGrammarType(token.pos);
   const colorClasses = getColorClasses(grammarType);
   const chars = token.surface_form.split('');
   const isPunctuation = token.pos === '記号' || /^[\s\p{P}\p{S}]+$/u.test(token.surface_form);
+  const karaokeClasses =
+    karaokeState === 'active'
+      ? 'ring-2 ring-sky-500 ring-offset-1 scale-105 z-10'
+      : karaokeState === 'past'
+        ? 'opacity-40'
+        : '';
 
   const displayReading = (() => {
     if (!token.reading) return null;
@@ -45,13 +53,19 @@ export const WordToken: React.FC<WordTokenProps> = ({
       : token.surface_form;
 
   if (isPunctuation) {
-    return <span className="inline-block text-base font-medium px-0.5">{token.surface_form}</span>;
+    return (
+      <span
+        className={`inline-block text-base font-medium px-0.5 transition-opacity ${karaokeClasses}`}
+      >
+        {token.surface_form}
+      </span>
+    );
   }
 
   if (isSplitMode && chars.length > 1 && readingMode !== 'romaji') {
     return (
       <span
-        className={`inline-block px-2 py-1 border rounded-md text-base font-medium cursor-pointer hover:opacity-80 hover:shadow-sm ${colorClasses}`}
+        className={`inline-block px-2 py-1 border rounded-md text-base font-medium cursor-pointer hover:opacity-80 hover:shadow-sm transition ${karaokeClasses} ${colorClasses}`}
       >
         {chars.map((char, i) => (
           <React.Fragment key={i}>
@@ -85,7 +99,7 @@ export const WordToken: React.FC<WordTokenProps> = ({
     <span className="relative inline-block">
       <button
         onClick={onClick}
-        className={`inline-flex flex-col items-center px-2 py-1 border rounded-md font-medium transition hover:opacity-80 hover:shadow-sm ${colorClasses}`}
+        className={`inline-flex flex-col items-center px-2 py-1 border rounded-md font-medium transition hover:opacity-80 hover:shadow-sm ${karaokeClasses} ${colorClasses}`}
       >
         {displayReading && (
           <span className="text-[9px] text-gray-500 leading-tight mb-0">{displayReading}</span>
