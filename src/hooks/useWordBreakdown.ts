@@ -25,11 +25,13 @@ export function useWordBreakdown(token: Token | null): WordBreakdown | null {
 
       const matchedWord = jisho?.japanese[0]?.word;
       const dictionaryForm = matchedWord || searchForm || token.surface_form;
+      const dictionaryReading = jisho?.japanese[0]?.reading || '';
 
       setBreakdown({
         surfaceForm: token.surface_form,
         reading: token.reading || '',
         dictionaryForm,
+        dictionaryReading,
         grammarExplanation: findGrammarExplanation(token.surface_form),
         meanings,
       });

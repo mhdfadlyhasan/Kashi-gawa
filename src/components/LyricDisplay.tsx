@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { KaraokeTokenState, Token } from '../types';
+import { KaraokeTokenState, Token, TokenSelection, WordBreakdown } from '../types';
 import { ReadingMode } from '../lib/kana';
 import { WordToken } from './WordToken';
 import { BreakdownModal } from './BreakdownModal';
@@ -11,8 +11,9 @@ interface LyricDisplayProps {
   readingMode: ReadingMode;
   isEditMode?: boolean;
   detailMode: DetailMode;
-  selectedToken: Token | null;
-  setSelectedToken: (token: Token | null) => void;
+  selectedToken: TokenSelection | null;
+  setSelectedToken: (selection: TokenSelection | null) => void;
+  onAddToAnki?: (breakdown: WordBreakdown) => void;
   isKaraoke?: boolean;
   activeLineIdx?: number;
   activeTokenIdx?: number;
@@ -29,6 +30,7 @@ const LyricDisplayComponent: React.FC<LyricDisplayProps> = ({
   detailMode,
   selectedToken,
   setSelectedToken,
+  onAddToAnki,
   isKaraoke,
   activeLineIdx = -1,
   activeTokenIdx = -1,
@@ -185,7 +187,11 @@ const LyricDisplayComponent: React.FC<LyricDisplayProps> = ({
                           if (isSplitMode) {
                             setSplitTokenKey(null);
                           } else {
-                            setSelectedToken(selectedToken === token ? null : token);
+                            setSelectedToken(
+                              selectedToken?.token === token
+                                ? null
+                                : { token, line, lineIdx, tokenIdx }
+                            );
                           }
                         }}
                         onEnterSplitMode={() => {
@@ -213,9 +219,10 @@ const LyricDisplayComponent: React.FC<LyricDisplayProps> = ({
 
       {detailMode === 'popup' && selectedToken && (
         <BreakdownModal
-          token={selectedToken}
+          token={selectedToken.token}
           onClose={() => setSelectedToken(null)}
           readingMode={readingMode}
+          onAddToAnki={onAddToAnki}
         />
       )}
     </div>

@@ -80,10 +80,33 @@ export interface KaraokePosition {
 
 export type KaraokeTokenState = 'past' | 'active' | 'upcoming';
 
+export interface TokenSelection {
+  token: Token;
+  line: Token[];
+  lineIdx: number;
+  tokenIdx: number;
+}
+
+export interface AnkiCard {
+  id: string;
+  term: string;
+  reading: string;
+  surface: string;
+  meaning: string;
+  sentence: string;
+  sentenceFurigana?: string;
+  sentenceMeaning: string;
+  notes: string;
+  sourceTitle: string;
+  sourceArtist: string;
+  addedAt: string;
+}
+
 export interface WordBreakdown {
   surfaceForm: string;
   reading: string;
   dictionaryForm: string;
+  dictionaryReading: string;
   grammarExplanation: string | null;
   meanings: string[];
 }

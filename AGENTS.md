@@ -39,6 +39,9 @@ src/
     WordToken.tsx           # Individual boxed/colored word
     BreakdownModal.tsx      # Click popup: grammar, dict form, meaning, reading
     CompactBreakdown.tsx    # Inline sticky breakdown panel
+    AnkiCardEditor.tsx      # Edit/translate a queued Anki card
+    AnkiQueueModal.tsx      # Select cards, set deck, export .apkg
+    KaraokeBar.tsx          # Synced playback controls + YouTube player
     ReadingModeToggle.tsx   # Normal / hiragana / katakana / furigana / romaji
     DetailModeToggle.tsx    # Popup / compact breakdown mode
     WelcomeModal.tsx        # First-visit onboarding
@@ -48,14 +51,22 @@ src/
     useLibrary.ts           # localStorage CRUD for the song library
     useTokenizer.ts         # Kuromoji.js init, tokenization, token merging
     useWordBreakdown.ts     # Dictionary + grammar lookup for a token
+    useAnkiCards.ts         # Persisted Anki queue + deck name
     useReadingMode.ts       # Persisted reading mode
     useDetailMode.ts        # Persisted detail display mode
     useFirstVisit.ts        # Persisted welcome modal state
+    useKaraokeClock.ts      # Virtual playback clock
+    useYouTubePlayer.ts     # YouTube IFrame API wrapper
   lib/
     lrclib.ts               # LRCLIB API client
     jisho.ts                # Local dictionaries + JLPT/Wiktionary fallbacks
     core1000Dict.ts         # Bundled Core 1000 dictionary (generated)
     grammarDict.ts          # Suffix-based grammar explanations
+    anki.ts                 # .apkg generation, ruby markup, share/download
+    translate.ts            # Best-effort Japanese → English line translation
+    karaoke.ts              # Timed line/token helpers
+    lrc.ts                  # LRC parsing
+    youtube.ts              # YouTube URL parsing + IFrame API loader
     kana.ts                 # Kana/romaji conversion + reading modes
     colorMap.ts             # Part-of-Speech → color/label logic
     toast.ts                # Tiny toast event bus
@@ -70,6 +81,8 @@ public/
     *.dat.gz                # Kuromoji dictionary data
 scripts/
   build-dict.ts             # Regenerates core1000Dict.ts from Jisho API
+workers/
+  deepl-proxy.js            # Optional Cloudflare Worker proxy for DeepL
 ```
 
 ## Coding Conventions
@@ -134,6 +147,8 @@ Other persisted keys:
 - `kashi-gawa-reading-mode`
 - `kashi-gawa-detail-mode`
 - `kashi-gawa-welcome-shown`
+- `kashi-gawa-anki-cards` (`AnkiCard[]`)
+- `kashi-gawa-anki-deck` (last deck name, default `Kashi-gawa`)
 
 - Songs are ordered by `addedAt` (newest first).
 - No size cap or schema version. User's device storage is the limit.
@@ -154,10 +169,23 @@ Other persisted keys:
 - `GET https://en.wiktionary.org/api/rest_v1/page/definition/{word}`
 - Last-resort fallback for words missing from the other sources.
 
+### Translation (Anki sentence meaning)
+- DeepL (optional): `POST {VITE_DEEPL_PROXY_URL}` with `{ text, sourceLang, targetLang }`, handled by `workers/deepl-proxy.js` (Cloudflare Worker). DeepL itself is not browser-callable (no CORS) and the key must stay server-side. The proxy URL can also be set at runtime via `localStorage['kashi-gawa-deepl-proxy']`.
+- MyMemory: `GET https://api.mymemory.translated.net/get?q={text}&langpair=ja|en`
+- Google fallback: `GET https://translate.googleapis.com/translate_a/single?client=gtx&sl=ja&tl=en&dt=t&q={text}`
+- All are best-effort and rate-limited. Results are editable; failures leave the field blank.
+
+### Anki Export
+- `anki-apkg-export` (with `sql.js` WASM) builds a legacy `collection.anki2` `.apkg` entirely in the browser.
+- Note type: `Kashi-gawa Vocabulary` with fields `Term`, `TermFurigana`, `Meaning`, `Sentence`, `SentenceMeaning`, `Notes`.
+- `TermFurigana` and `Sentence` use per-kanji `<ruby>` annotations. `Sentence` ends with `<br><br>- Song + Artist` from the card's source fields.
+- The WASM is dynamically imported only on export, so it stays out of the initial bundle. `src/lib/anki.ts` loads the sql.js wasm that matches the resolved sql.js version (do not switch back to the package-bundled wasm; the versions can drift).
+
 ## Tooling
 
 - `npm run lint` — ESLint (flat config in `eslint.config.js`)
 - `npm run typecheck` — `tsc --noEmit`
+- `npm test` — Vitest unit tests (`src/**/*.test.ts`)
 - `npm run format` / `npm run format:check` — Prettier
 - `npm run build` — typecheck + production build
 
@@ -178,4 +206,5 @@ Vite `base` must stay set to `/Kashi-gawa/` for GH Pages subpath hosting.
 - Always use the types from `src/types/index.ts`. Extend them if the data model changes.
 - Keep the UI clean and minimal. Japanese text should be the hero.
 - If a dependency needs to be added, prefer lightweight, browser-friendly packages.
-- There are no automated tests yet. Verify changes with `npm run lint`, `npm run typecheck`, and manual testing.
+- Anki export must keep the note type field list stable. If the fields change, rename the model (e.g. `Kashi-gawa Vocabulary v2`) so re-imports update notes instead of conflicting.
+- Verify changes with `npm run lint`, `npm run typecheck`, `npm test`, and manual testing.

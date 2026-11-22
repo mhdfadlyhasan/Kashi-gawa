@@ -1,5 +1,5 @@
 import React from 'react';
-import { Token } from '../types';
+import { Token, WordBreakdown } from '../types';
 import { ReadingMode, convertReading } from '../lib/kana';
 import { useWordBreakdown } from '../hooks/useWordBreakdown';
 
@@ -7,12 +7,14 @@ interface CompactBreakdownProps {
   token: Token;
   onClose: () => void;
   readingMode: ReadingMode;
+  onAddToAnki?: (breakdown: WordBreakdown) => void;
 }
 
 export const CompactBreakdown: React.FC<CompactBreakdownProps> = ({
   token,
   onClose,
   readingMode,
+  onAddToAnki,
 }) => {
   const breakdown = useWordBreakdown(token);
 
@@ -56,6 +58,14 @@ export const CompactBreakdown: React.FC<CompactBreakdownProps> = ({
 
       {breakdown ? (
         <div className="mt-2 flex items-center gap-2 pl-2 overflow-hidden">
+          {onAddToAnki && (
+            <button
+              onClick={() => onAddToAnki(breakdown)}
+              className="text-xs px-2 py-0.5 rounded-md bg-gray-800 text-white hover:bg-gray-700 transition flex-shrink-0"
+            >
+              + Anki
+            </button>
+          )}
           <a
             href={`https://jisho.org/search/${encodeURIComponent(breakdown.dictionaryForm)}`}
             target="_blank"

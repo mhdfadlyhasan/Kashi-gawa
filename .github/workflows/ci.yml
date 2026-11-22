@@ -30,4 +30,6 @@ jobs:
       - name: Check formatting
         run: npm run format:check
       - name: Build
+        env:
+          VITE_DEEPL_PROXY_URL: ${{ vars.DEEPL_PROXY_URL }}
         run: npm run build

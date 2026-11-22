@@ -231,7 +231,10 @@ Features added after the original phases, now part of the shipped app:
 - **Welcome modal** — first-visit onboarding, dismissed state persisted
 - **Mobile sidebar drawer** — responsive layout
 - **Dictionary fallback chain** — JMDict → Core 1000 → JLPT Vocab API → Wiktionary
-- **Tooling** — ESLint, Prettier, typecheck, and GitHub Actions CI
+- **Karaoke mode** — LRC synced lyrics, optional YouTube playback, timing offsets, and token highlighting (`src/lib/lrc.ts`, `src/lib/karaoke.ts`, `src/lib/youtube.ts`)
+- **Anki export** — queue words with dictionary form, per-kanji furigana, meaning, lyric sentence (furigana + source line), machine-translated sentence meaning, and notes; export a `.apkg` to a named deck (`src/lib/anki.ts`, `src/hooks/useAnkiCards.ts`)
+- **DeepL translation (optional)** — a Cloudflare Worker proxy (`workers/deepl-proxy.js`) keeps the DeepL key server-side; MyMemory and Google remain as fallbacks
+- **Tooling** — ESLint, Prettier, typecheck, Vitest, and GitHub Actions CI
 
 Remaining gaps are tracked in the README ("Known Gaps").
 
@@ -241,6 +244,6 @@ Remaining gaps are tracked in the README ("Known Gaps").
 
 - All API calls are browser-side. No backend.
 - Errors are surfaced with toast notifications; there are no error boundaries or retry logic.
-- No automated tests yet. Verify with `npm run lint`, `npm run typecheck`, and manual testing.
+- Unit tests cover pure helpers. Verify with `npm run lint`, `npm run typecheck`, `npm test`, and manual testing (including on-device Anki import).
 - No analytics, no auth, no tracking.
 - Keep bundle size small. Tree-shake unused Tailwind classes.

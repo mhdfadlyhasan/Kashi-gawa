@@ -1,5 +1,5 @@
 import React from 'react';
-import { Token } from '../types';
+import { Token, WordBreakdown } from '../types';
 import { ReadingMode, convertReading } from '../lib/kana';
 import { getPosLabel } from '../lib/colorMap';
 import { useWordBreakdown } from '../hooks/useWordBreakdown';
@@ -8,9 +8,15 @@ interface BreakdownModalProps {
   token: Token;
   onClose: () => void;
   readingMode: ReadingMode;
+  onAddToAnki?: (breakdown: WordBreakdown) => void;
 }
 
-export const BreakdownModal: React.FC<BreakdownModalProps> = ({ token, onClose, readingMode }) => {
+export const BreakdownModal: React.FC<BreakdownModalProps> = ({
+  token,
+  onClose,
+  readingMode,
+  onAddToAnki,
+}) => {
   const breakdown = useWordBreakdown(token);
 
   const displayedReading = token.reading
@@ -68,6 +74,15 @@ export const BreakdownModal: React.FC<BreakdownModalProps> = ({ token, onClose, 
                   </div>
                 )}
               </div>
+
+              {onAddToAnki && (
+                <button
+                  onClick={() => onAddToAnki(breakdown)}
+                  className="block w-full text-center py-2 px-4 rounded-lg bg-gray-800 text-white hover:bg-gray-700 transition-colors text-sm font-medium"
+                >
+                  Add to Anki
+                </button>
+              )}
 
               <a
                 href={`https://jisho.org/search/${encodeURIComponent(breakdown.dictionaryForm)}`}

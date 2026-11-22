@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { LibraryItem, TimedToken, Token } from './types';
+import { AnkiCard, LibraryItem, TimedToken, Token, TokenSelection, WordBreakdown } from './types';
 import { useLyrics } from './hooks/useLyrics';
 import { useLibrary } from './hooks/useLibrary';
 import { useTokenizer, tokenizeText, tokenizeLinesText } from './hooks/useTokenizer';
 import { useReadingMode } from './hooks/useReadingMode';
 import { useFirstVisit } from './hooks/useFirstVisit';
 import { useDetailMode } from './hooks/useDetailMode';
+import { useAnkiCards } from './hooks/useAnkiCards';
 import { SearchBar } from './components/SearchBar';
 import { SongLibrary } from './components/SongLibrary';
 import { LyricDisplay } from './components/LyricDisplay';
@@ -13,9 +14,12 @@ import { ReadingModeToggle } from './components/ReadingModeToggle';
 import { DetailModeToggle } from './components/DetailModeToggle';
 import { CompactBreakdown } from './components/CompactBreakdown';
 import { KaraokeBar } from './components/KaraokeBar';
+import { AnkiCardEditor } from './components/AnkiCardEditor';
+import { AnkiQueueModal } from './components/AnkiQueueModal';
 import { WelcomeModal } from './components/WelcomeModal';
 import { ToastContainer } from './components/ToastContainer';
-import { kanaToRomaji } from './lib/kana';
+import { convertReading, kanaToRomaji } from './lib/kana';
+import { tokensToSentenceHtml } from './lib/anki';
 import { lrcHasWordTiming, parseLrc, toTimedEntries } from './lib/lrc';
 import { buildTimedLines, buildTimedTokens, findActive, getDurationMs } from './lib/karaoke';
 import { parseYouTubeId } from './lib/youtube';
@@ -60,9 +64,21 @@ function App() {
   const [tokens, setTokens] = useState<Token[][]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [selectedToken, setSelectedToken] = useState<Token | null>(null);
+  const [selection, setSelection] = useState<TokenSelection | null>(null);
   const [isKaraoke, setIsKaraoke] = useState(false);
   const [karaokeElapsedMs, setKaraokeElapsedMs] = useState(0);
+
+  const {
+    cards: ankiCards,
+    deckName,
+    setDeckName,
+    saveCard,
+    removeCard,
+    clearCards,
+    getCard,
+  } = useAnkiCards();
+  const [ankiEditor, setAnkiEditor] = useState<AnkiCard | null>(null);
+  const [ankiQueueOpen, setAnkiQueueOpen] = useState(false);
 
   const activeSong = activeId ? getSong(activeId) : null;
   const headerRef = useRef<HTMLDivElement | null>(null);
@@ -301,6 +317,56 @@ function App() {
     [activeSong, updateSong]
   );
 
+  const handleAddToAnki = useCallback(
+    (breakdown: WordBreakdown) => {
+      if (!selection || !activeSong) return;
+      const { token, line, lineIdx, tokenIdx } = selection;
+      const id = `${activeSong.id}-${lineIdx}-${token.surface_form}-${token.basic_form}`;
+
+      setSelection(null);
+
+      const existing = getCard(id);
+      if (existing) {
+        setAnkiEditor(existing);
+        return;
+      }
+
+      const term = breakdown.dictionaryForm || token.basic_form || token.surface_form;
+      const rawReading =
+        breakdown.dictionaryReading ||
+        (term === token.surface_form && token.reading !== '*' ? token.reading : '');
+      const reading = rawReading ? convertReading(rawReading, 'hiragana') : '';
+
+      setAnkiEditor({
+        id,
+        term,
+        reading,
+        surface: token.surface_form,
+        meaning: breakdown.meanings.join('; '),
+        sentence: line.map((part) => part.surface_form).join(''),
+        sentenceFurigana: tokensToSentenceHtml(
+          line.map((part) => ({ surface: part.surface_form, reading: part.reading || '' })),
+          tokenIdx
+        ),
+        sentenceMeaning: '',
+        notes: '',
+        sourceTitle: activeSong.title,
+        sourceArtist: activeSong.artist,
+        addedAt: new Date().toISOString(),
+      });
+    },
+    [selection, activeSong, getCard]
+  );
+
+  const handleSaveAnkiCard = useCallback(
+    (card: AnkiCard) => {
+      saveCard(card);
+      setAnkiEditor(null);
+      showToast('Card saved to the Anki queue');
+    },
+    [saveCard]
+  );
+
   const displayTitle =
     activeSong && readingMode === 'romaji' && activeSong.titleReading
       ? activeSong.titleReading
@@ -344,8 +410,32 @@ function App() {
             readingMode={readingMode}
           />
         </div>
-        <div className="ml-auto hidden md:block">
-          <ReadingModeToggle readingMode={readingMode} onChange={setReadingMode} />
+        <div className="ml-auto flex items-center gap-2">
+          <button
+            onClick={() => setAnkiQueueOpen(true)}
+            className="relative flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 transition text-xs font-medium"
+            title="Anki queue"
+          >
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              viewBox="0 0 24 24"
+            >
+              <rect x="3" y="7" width="13" height="13" rx="2" />
+              <path d="M7 4h11a2 2 0 012 2v11" />
+            </svg>
+            <span className="hidden sm:inline">Anki</span>
+            {ankiCards.length > 0 && (
+              <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
+                {ankiCards.length}
+              </span>
+            )}
+          </button>
+          <div className="hidden md:block">
+            <ReadingModeToggle readingMode={readingMode} onChange={setReadingMode} />
+          </div>
         </div>
       </header>
 
@@ -397,11 +487,12 @@ function App() {
                 ref={headerRef}
                 className={`sticky top-0 z-30 bg-gray-50/95 backdrop-blur-sm mb-6 pt-4 md:pt-8 pb-2 -mx-2 px-2 rounded-lg ${detailMode === 'compact' ? 'min-h-[120px]' : ''}`}
               >
-                {detailMode === 'compact' && selectedToken ? (
+                {detailMode === 'compact' && selection ? (
                   <CompactBreakdown
-                    token={selectedToken}
-                    onClose={() => setSelectedToken(null)}
+                    token={selection.token}
+                    onClose={() => setSelection(null)}
                     readingMode={readingMode}
+                    onAddToAnki={handleAddToAnki}
                   />
                 ) : (
                   <div className="flex items-start justify-between gap-2">
@@ -478,8 +569,9 @@ function App() {
                   readingMode={readingMode}
                   isEditMode={isEditMode}
                   detailMode={detailMode}
-                  selectedToken={selectedToken}
-                  setSelectedToken={setSelectedToken}
+                  selectedToken={selection}
+                  setSelectedToken={setSelection}
+                  onAddToAnki={handleAddToAnki}
                   isKaraoke={isKaraoke}
                   activeLineIdx={activePosition?.lineIdx ?? -1}
                   activeTokenIdx={activePosition?.tokenIdx ?? -1}
@@ -502,6 +594,28 @@ function App() {
           )}
         </main>
       </div>
+
+      {ankiEditor && (
+        <AnkiCardEditor
+          initial={ankiEditor}
+          deckName={deckName}
+          onDeckNameChange={setDeckName}
+          onSave={handleSaveAnkiCard}
+          onClose={() => setAnkiEditor(null)}
+        />
+      )}
+
+      {ankiQueueOpen && (
+        <AnkiQueueModal
+          cards={ankiCards}
+          deckName={deckName}
+          onDeckNameChange={setDeckName}
+          onEdit={(card) => setAnkiEditor(card)}
+          onRemove={removeCard}
+          onClear={clearCards}
+          onClose={() => setAnkiQueueOpen(false)}
+        />
+      )}
 
       {isFirstVisit && <WelcomeModal onClose={markSeen} />}
       <ToastContainer />
