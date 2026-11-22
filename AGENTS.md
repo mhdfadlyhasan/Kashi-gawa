@@ -182,6 +182,7 @@ Other persisted keys:
 - `TermFurigana` and `Sentence` use per-kanji `<ruby>` annotations. `Sentence` ends with `<br><br>- Song + Artist` from the card's source fields.
 - The queue pre-builds the selected format when the modal opens (debounced on card/deck/format changes) so the Export click can call Web Share or trigger a download synchronously. Do not reintroduce a long `await` before `navigator.share()`; it breaks the mobile tap activation.
 - `.apkg` is the recommended mobile format (AnkiDroid/AnkiMobile). CSV is desktop-first; mobile clients may not import text files.
+- Use `application/apkg` as the MIME type for `.apkg` shares/downloads. AnkiDroid's import resolver recognizes `application/apkg` / `application/x-apkg` / `application/vnd.anki`, but **not** `application/octet-stream`.
 - The WASM is dynamically imported only on export, so it stays out of the initial bundle. `src/lib/anki.ts` loads the sql.js wasm that matches the resolved sql.js version (do not switch back to the package-bundled wasm; the versions can drift).
 
 ## Tooling

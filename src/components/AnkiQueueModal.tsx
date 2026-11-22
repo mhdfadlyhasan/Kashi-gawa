@@ -68,7 +68,7 @@ export const AnkiQueueModal: React.FC<AnkiQueueModalProps> = ({
           key: prepareKey,
           blob,
           filename: format === 'apkg' ? deckFileName(deck) : csvFileName(deck),
-          mime: format === 'apkg' ? 'application/octet-stream' : 'text/csv;charset=utf-8',
+          mime: format === 'apkg' ? 'application/apkg' : 'text/csv;charset=utf-8',
         });
       } catch (err) {
         if (cancelled) return;
