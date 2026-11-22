@@ -312,12 +312,12 @@ export function shareOrDownloadFile(
       () => 'shared' as const,
       (err: unknown) => {
         if (err instanceof DOMException && err.name === 'AbortError') return 'cancelled' as const;
-        downloadBlob(blob, filename);
+        downloadBlob(file, filename);
         return 'downloaded' as const;
       }
     );
   }
 
-  downloadBlob(blob, filename);
+  downloadBlob(file, filename);
   return Promise.resolve('downloaded');
 }
