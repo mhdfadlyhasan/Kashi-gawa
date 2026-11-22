@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
-import { AnkiCard } from '../types';
+import { AnkiCard, AnkiExportFormat } from '../types';
 import { showToast } from '../lib/toast';
 
 const CARDS_KEY = 'kashi-gawa-anki-cards';
 const DECK_KEY = 'kashi-gawa-anki-deck';
+const FORMAT_KEY = 'kashi-gawa-anki-format';
 
 export const DEFAULT_ANKI_DECK = 'Kashi-gawa';
 
@@ -28,9 +29,18 @@ function loadDeckName(): string {
   }
 }
 
+function loadFormat(): AnkiExportFormat {
+  try {
+    return localStorage.getItem(FORMAT_KEY) === 'csv' ? 'csv' : 'apkg';
+  } catch {
+    return 'apkg';
+  }
+}
+
 export function useAnkiCards() {
   const [cards, setCards] = useState<AnkiCard[]>(loadCards);
   const [deckName, setDeckName] = useState<string>(loadDeckName);
+  const [exportFormat, setExportFormat] = useState<AnkiExportFormat>(loadFormat);
 
   useEffect(() => {
     try {
@@ -48,6 +58,14 @@ export function useAnkiCards() {
       // Persisting the deck name is best-effort.
     }
   }, [deckName]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(FORMAT_KEY, exportFormat);
+    } catch {
+      // Persisting the export format is best-effort.
+    }
+  }, [exportFormat]);
 
   const saveCard = useCallback((card: AnkiCard) => {
     setCards((prev) => {
@@ -76,6 +94,8 @@ export function useAnkiCards() {
     cards,
     deckName,
     setDeckName,
+    exportFormat,
+    setExportFormat,
     saveCard,
     removeCard,
     clearCards,

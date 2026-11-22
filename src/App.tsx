@@ -72,6 +72,8 @@ function App() {
     cards: ankiCards,
     deckName,
     setDeckName,
+    exportFormat,
+    setExportFormat,
     saveCard,
     removeCard,
     clearCards,
@@ -609,7 +611,9 @@ function App() {
         <AnkiQueueModal
           cards={ankiCards}
           deckName={deckName}
+          format={exportFormat}
           onDeckNameChange={setDeckName}
+          onFormatChange={setExportFormat}
           onEdit={(card) => setAnkiEditor(card)}
           onRemove={removeCard}
           onClear={clearCards}

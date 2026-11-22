@@ -87,6 +87,8 @@ export interface TokenSelection {
   tokenIdx: number;
 }
 
+export type AnkiExportFormat = 'apkg' | 'csv';
+
 export interface AnkiCard {
   id: string;
   term: string;

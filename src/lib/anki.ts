@@ -230,33 +230,57 @@ export async function buildApkg(cards: AnkiCard[], deckName: string): Promise<Bl
   }
 }
 
-export function deckFileName(deckName: string): string {
-  const slug =
+const CSV_HEADERS = ['Term', 'TermFurigana', 'Meaning', 'Sentence', 'SentenceMeaning', 'Notes'];
+
+function csvEscape(value: string): string {
+  if (!/[",\r\n]/.test(value)) return value;
+  return `"${value.replace(/"/g, '""')}"`;
+}
+
+export function buildCsv(cards: AnkiCard[]): Blob {
+  if (cards.length === 0) throw new Error('No cards selected');
+
+  const rows = [
+    CSV_HEADERS,
+    ...cards.map((card) => [
+      escapeHtml(card.term),
+      toFurigana(card.term, card.reading),
+      withLineBreaks(card.meaning),
+      buildSentenceField(card),
+      withLineBreaks(card.sentenceMeaning),
+      withLineBreaks(card.notes),
+    ]),
+  ];
+
+  const csv = rows.map((row) => row.map(csvEscape).join(',')).join('\r\n');
+  return new Blob([csv], { type: 'text/csv;charset=utf-8' });
+}
+
+function deckSlug(deckName: string): string {
+  return (
     deckName
       .trim()
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '') || 'kashi-gawa';
-  const date = new Date().toISOString().slice(0, 10);
-  return `${slug}-${date}.apkg`;
+      .replace(/^-+|-+$/g, '') || 'kashi-gawa'
+  );
 }
 
-export type ApkgDelivery = 'shared' | 'downloaded' | 'cancelled';
+function dateStamp(): string {
+  return new Date().toISOString().slice(0, 10);
+}
 
-export async function shareOrDownloadApkg(blob: Blob, filename: string): Promise<ApkgDelivery> {
-  const file = new File([blob], filename, { type: 'application/octet-stream' });
-  const nav = navigator as Navigator & { canShare?: (data?: ShareData) => boolean };
+export function deckFileName(deckName: string): string {
+  return `${deckSlug(deckName)}-${dateStamp()}.apkg`;
+}
 
-  if (typeof nav.share === 'function' && nav.canShare?.({ files: [file] })) {
-    try {
-      await nav.share({ files: [file], title: 'Kashi-gawa deck' });
-      return 'shared';
-    } catch (err) {
-      if (err instanceof DOMException && err.name === 'AbortError') return 'cancelled';
-      // Any other share failure falls back to a regular download.
-    }
-  }
+export function csvFileName(deckName: string): string {
+  return `${deckSlug(deckName)}-${dateStamp()}.csv`;
+}
 
+export type ExportDelivery = 'shared' | 'downloaded' | 'cancelled';
+
+function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
@@ -265,5 +289,35 @@ export async function shareOrDownloadApkg(blob: Blob, filename: string): Promise
   link.click();
   link.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
-  return 'downloaded';
+}
+
+function isMobileDevice(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  return (
+    /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+  );
+}
+
+export function shareOrDownloadFile(
+  blob: Blob,
+  filename: string,
+  mime = 'application/octet-stream'
+): Promise<ExportDelivery> {
+  const file = new File([blob], filename, { type: mime });
+  const nav = navigator as Navigator & { canShare?: (data?: ShareData) => boolean };
+
+  if (isMobileDevice() && typeof nav.share === 'function' && nav.canShare?.({ files: [file] })) {
+    return nav.share({ files: [file], title: 'Kashi-gawa deck' }).then(
+      () => 'shared' as const,
+      (err: unknown) => {
+        if (err instanceof DOMException && err.name === 'AbortError') return 'cancelled' as const;
+        downloadBlob(blob, filename);
+        return 'downloaded' as const;
+      }
+    );
+  }
+
+  downloadBlob(blob, filename);
+  return Promise.resolve('downloaded');
 }

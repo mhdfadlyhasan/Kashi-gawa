@@ -24,7 +24,7 @@ The philosophy is simple: learn Japanese by reading Japanese, not by reading tra
 - 🈳 **Reading Modes** — Toggle between normal, hiragana, katakana, furigana, and romaji
 - ✂️ **Edit Mode** — Manually merge or split tokens when Kuromoji gets a word wrong, then re-parse if needed
 - 🎤 **Karaoke Mode** — Synced lyrics with optional YouTube playback, word highlighting, and timing offsets
-- 🃏 **Anki Export** — Queue words with furigana, meaning, lyric context, translation, and notes, then export a `.apkg` deck for AnkiMobile/AnkiDroid
+- 🃏 **Anki Export** — Queue words with furigana, meaning, lyric context, translation, and notes, then export a `.apkg` (recommended) or CSV deck for a named deck
 - 📱 **Responsive** — Single-page, mobile drawer sidebar, no backend, no routing
 - 🔔 **Toast Notifications** — API and storage errors surface as non-blocking toasts
 
@@ -173,6 +173,7 @@ All data is stored client-side. There is no backend and no account.
 | `kashi-gawa-welcome-shown` | Whether the welcome modal was dismissed |
 | `kashi-gawa-anki-cards` | Queued cards waiting for export |
 | `kashi-gawa-anki-deck` | Last Anki deck name |
+| `kashi-gawa-anki-format` | Last export format (`.apkg` or `.csv`) |
 
 ```ts
 interface LibraryItem {
@@ -197,7 +198,19 @@ Click a word, choose **Add to Anki**, then review the card fields: term (diction
 - song name + singer
 ```
 
-The **Anki** button in the header opens the queue, where you can select cards, set the target deck name, edit or delete cards, and **Export**. The app builds a `.apkg` entirely in the browser and either opens the native share sheet (mobile) or downloads the file. Open the file in AnkiMobile/AnkiDroid to import it into the named deck.
+The **Anki** button in the header opens the queue, where you can select cards, set the target deck name, choose a file type, edit or delete cards, and **Export**. Files are built in the browser before you click Export, so mobile share sheets open reliably.
+
+Export formats:
+
+- **Anki package (`.apkg`) — recommended.** Works with AnkiDroid, AnkiMobile, and desktop Anki.
+- **CSV (`.csv`) — desktop Anki.** Useful for spreadsheets or manual field mapping. If your mobile app does not offer to import text files, use `.apkg`.
+
+How to import (never unzip the `.apkg` — it is a ZIP container):
+
+- **Android / AnkiDroid:** tap the downloaded `.apkg` → AnkiDroid → Add. If an archive app opens instead, open AnkiDroid → ⋮ → Import → select the file.
+- **iPhone / AnkiMobile:** save to Files → tap the `.apkg` → AnkiMobile → Import.
+- **Desktop Anki:** File → Import → select the `.apkg`.
+- **CSV:** desktop Anki → File → Import → enable “Allow HTML” → map the six columns.
 
 Notes:
 

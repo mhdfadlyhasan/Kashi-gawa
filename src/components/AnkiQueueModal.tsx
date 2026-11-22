@@ -1,35 +1,92 @@
-import React, { useMemo, useState } from 'react';
-import { AnkiCard } from '../types';
+import React, { useEffect, useMemo, useState } from 'react';
+import { AnkiCard, AnkiExportFormat } from '../types';
 import { DEFAULT_ANKI_DECK } from '../hooks/useAnkiCards';
-import { buildApkg, deckFileName, shareOrDownloadApkg } from '../lib/anki';
+import { buildApkg, buildCsv, csvFileName, deckFileName, shareOrDownloadFile } from '../lib/anki';
 import { showToast } from '../lib/toast';
 
 interface AnkiQueueModalProps {
   cards: AnkiCard[];
   deckName: string;
+  format: AnkiExportFormat;
   onDeckNameChange: (name: string) => void;
+  onFormatChange: (format: AnkiExportFormat) => void;
   onEdit: (card: AnkiCard) => void;
   onRemove: (id: string) => void;
   onClear: () => void;
   onClose: () => void;
 }
 
+interface PreparedExport {
+  key: string;
+  blob: Blob;
+  filename: string;
+  mime: string;
+}
+
 export const AnkiQueueModal: React.FC<AnkiQueueModalProps> = ({
   cards,
   deckName,
+  format,
   onDeckNameChange,
+  onFormatChange,
   onEdit,
   onRemove,
   onClear,
   onClose,
 }) => {
   const [deselected, setDeselected] = useState<Set<string>>(new Set());
-  const [isExporting, setIsExporting] = useState(false);
+  const [prepared, setPrepared] = useState<PreparedExport | null>(null);
+  const [isPreparing, setIsPreparing] = useState(false);
 
   const selectedCards = useMemo(
     () => cards.filter((card) => !deselected.has(card.id)),
     [cards, deselected]
   );
+
+  const deck = deckName.trim() || DEFAULT_ANKI_DECK;
+  const prepareKey = useMemo(
+    () => JSON.stringify({ ids: selectedCards.map((card) => card.id), deck, format }),
+    [selectedCards, deck, format]
+  );
+
+  useEffect(() => {
+    if (selectedCards.length === 0) {
+      setPrepared(null);
+      setIsPreparing(false);
+      return;
+    }
+
+    let cancelled = false;
+    setIsPreparing(true);
+
+    const timer = setTimeout(async () => {
+      try {
+        const blob =
+          format === 'apkg' ? await buildApkg(selectedCards, deck) : buildCsv(selectedCards);
+        if (cancelled) return;
+        setPrepared({
+          key: prepareKey,
+          blob,
+          filename: format === 'apkg' ? deckFileName(deck) : csvFileName(deck),
+          mime: format === 'apkg' ? 'application/octet-stream' : 'text/csv;charset=utf-8',
+        });
+      } catch (err) {
+        if (cancelled) return;
+        setPrepared(null);
+        const message = err instanceof Error ? err.message : 'Unknown error';
+        showToast(`Could not prepare the export — ${message}`);
+      } finally {
+        if (!cancelled) setIsPreparing(false);
+      }
+    }, 250);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [selectedCards, deck, format, prepareKey]);
+
+  const isReady = Boolean(prepared && prepared.key === prepareKey && !isPreparing);
 
   const toggle = (id: string) => {
     setDeselected((prev) => {
@@ -43,28 +100,30 @@ export const AnkiQueueModal: React.FC<AnkiQueueModalProps> = ({
   const selectAll = () => setDeselected(new Set());
   const selectNone = () => setDeselected(new Set(cards.map((card) => card.id)));
 
-  const handleExport = async () => {
-    if (selectedCards.length === 0) {
-      showToast('Select at least one card to export');
-      return;
-    }
+  const handleExport = () => {
+    if (!prepared || prepared.key !== prepareKey) return;
 
-    const deck = deckName.trim() || DEFAULT_ANKI_DECK;
-    setIsExporting(true);
-    try {
-      const blob = await buildApkg(selectedCards, deck);
-      const delivery = await shareOrDownloadApkg(blob, deckFileName(deck));
-      if (delivery === 'shared') {
-        showToast('Deck shared — choose Anki to import it');
-      } else if (delivery === 'downloaded') {
-        showToast('Deck downloaded — open the .apkg in Anki');
+    void shareOrDownloadFile(prepared.blob, prepared.filename, prepared.mime).then(
+      (delivery) => {
+        if (delivery === 'shared') {
+          showToast(
+            format === 'apkg'
+              ? 'Deck shared — choose Anki to import it'
+              : 'CSV shared — import it in Anki Desktop'
+          );
+        } else if (delivery === 'downloaded') {
+          showToast(
+            format === 'apkg'
+              ? 'Deck downloaded — open the .apkg in Anki (do not unzip)'
+              : 'CSV downloaded — import it in Anki Desktop'
+          );
+        }
+      },
+      (err: unknown) => {
+        const message = err instanceof Error ? err.message : 'Unknown error';
+        showToast(`Export failed — ${message}`);
       }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
-      showToast(`Export failed — ${message}`);
-    } finally {
-      setIsExporting(false);
-    }
+    );
   };
 
   const handleClear = () => {
@@ -74,6 +133,17 @@ export const AnkiQueueModal: React.FC<AnkiQueueModalProps> = ({
     setDeselected(new Set());
     onClear();
   };
+
+  const statusText =
+    selectedCards.length === 0
+      ? 'Select at least one card.'
+      : isPreparing
+        ? `Preparing ${format === 'apkg' ? '.apkg' : '.csv'}…`
+        : isReady
+          ? format === 'apkg'
+            ? 'Ready. Open the .apkg in Anki — do not unzip it.'
+            : 'Ready for Anki Desktop.'
+          : 'Preparing…';
 
   return (
     <div className="fixed inset-0 z-50 bg-black/30 overflow-y-auto" onClick={onClose}>
@@ -111,6 +181,65 @@ export const AnkiQueueModal: React.FC<AnkiQueueModalProps> = ({
                 className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-300"
               />
             </label>
+
+            <div className="mt-3">
+              <span className="block text-xs text-gray-500 uppercase tracking-wide mb-1">
+                File type
+              </span>
+              <div className="inline-flex rounded-lg border border-gray-200 p-0.5">
+                <button
+                  type="button"
+                  onClick={() => onFormatChange('apkg')}
+                  aria-pressed={format === 'apkg'}
+                  className={`px-3 py-1.5 text-xs rounded-md transition ${
+                    format === 'apkg' ? 'bg-gray-800 text-white' : 'text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  Anki package (.apkg)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onFormatChange('csv')}
+                  aria-pressed={format === 'csv'}
+                  className={`px-3 py-1.5 text-xs rounded-md transition ${
+                    format === 'csv' ? 'bg-gray-800 text-white' : 'text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  CSV (desktop)
+                </button>
+              </div>
+              <p className="mt-1 text-[11px] text-gray-400">
+                {format === 'apkg'
+                  ? 'Recommended for AnkiDroid, AnkiMobile, and desktop Anki.'
+                  : 'Best for desktop Anki and spreadsheets. If your mobile app does not offer to import it, use .apkg.'}
+              </p>
+            </div>
+
+            <details className="mt-3 text-[11px] text-gray-500">
+              <summary className="cursor-pointer select-none text-gray-600 hover:text-gray-800">
+                How to import (do not unzip the .apkg)
+              </summary>
+              <div className="mt-2 space-y-1 rounded-lg bg-gray-50 p-3">
+                <p>
+                  <span className="font-semibold text-gray-700">Android / AnkiDroid:</span> tap the
+                  downloaded .apkg → AnkiDroid → Add. If an archive app opens instead, open
+                  AnkiDroid → ⋮ → Import → select the file.
+                </p>
+                <p>
+                  <span className="font-semibold text-gray-700">iPhone / AnkiMobile:</span> save to
+                  Files → tap the .apkg → AnkiMobile → Import.
+                </p>
+                <p>
+                  <span className="font-semibold text-gray-700">Desktop Anki:</span> File → Import →
+                  select the .apkg.
+                </p>
+                <p>
+                  <span className="font-semibold text-gray-700">CSV:</span> desktop Anki → File →
+                  Import → enable “Allow HTML” → map the six columns.
+                </p>
+              </div>
+            </details>
+
             <div className="flex items-center gap-3 mt-3 text-xs">
               <button onClick={selectAll} className="text-blue-600 hover:text-blue-800">
                 Select all
@@ -185,15 +314,15 @@ export const AnkiQueueModal: React.FC<AnkiQueueModalProps> = ({
           </div>
 
           <div className="p-5 border-t border-gray-100 flex items-center justify-between gap-3">
-            <p className="text-[11px] text-gray-400">
-              Exports a .apkg file. Open it in AnkiMobile/AnkiDroid to import.
-            </p>
+            <p className="text-[11px] text-gray-400">{statusText}</p>
             <button
               onClick={handleExport}
-              disabled={isExporting || selectedCards.length === 0}
+              disabled={!isReady || selectedCards.length === 0}
               className="flex-shrink-0 px-4 py-2 text-sm bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isExporting ? 'Exporting…' : `Export ${selectedCards.length || ''} to Anki`}
+              {isPreparing
+                ? 'Preparing…'
+                : `Export ${selectedCards.length || ''} ${format === 'apkg' ? 'to Anki' : 'as CSV'}`}
             </button>
           </div>
         </div>

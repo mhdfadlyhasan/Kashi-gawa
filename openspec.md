@@ -232,7 +232,7 @@ Features added after the original phases, now part of the shipped app:
 - **Mobile sidebar drawer** — responsive layout
 - **Dictionary fallback chain** — JMDict → Core 1000 → JLPT Vocab API → Wiktionary
 - **Karaoke mode** — LRC synced lyrics, optional YouTube playback, timing offsets, and token highlighting (`src/lib/lrc.ts`, `src/lib/karaoke.ts`, `src/lib/youtube.ts`)
-- **Anki export** — queue words with dictionary form, per-kanji furigana, meaning, lyric sentence (furigana + source line), machine-translated sentence meaning, and notes; export a `.apkg` to a named deck (`src/lib/anki.ts`, `src/hooks/useAnkiCards.ts`)
+- **Anki export** — queue words with dictionary form, per-kanji furigana, meaning, lyric sentence (furigana + source line), machine-translated sentence meaning, and notes; export a prebuilt `.apkg` (recommended) or desktop CSV to a named deck (`src/lib/anki.ts`, `src/hooks/useAnkiCards.ts`)
 - **DeepL translation (optional)** — a Cloudflare Worker proxy (`workers/deepl-proxy.js`) keeps the DeepL key server-side; MyMemory and Google remain as fallbacks
 - **Tooling** — ESLint, Prettier, typecheck, Vitest, and GitHub Actions CI
 

@@ -149,6 +149,7 @@ Other persisted keys:
 - `kashi-gawa-welcome-shown`
 - `kashi-gawa-anki-cards` (`AnkiCard[]`)
 - `kashi-gawa-anki-deck` (last deck name, default `Kashi-gawa`)
+- `kashi-gawa-anki-format` (`'apkg' | 'csv'`, default `'apkg'`)
 
 - Songs are ordered by `addedAt` (newest first).
 - No size cap or schema version. User's device storage is the limit.
@@ -176,9 +177,11 @@ Other persisted keys:
 - All are best-effort and rate-limited. Results are editable; failures leave the field blank.
 
 ### Anki Export
-- `anki-apkg-export` (with `sql.js` WASM) builds a legacy `collection.anki2` `.apkg` entirely in the browser.
+- `anki-apkg-export` (with `sql.js` WASM) builds a legacy `collection.anki2` `.apkg` entirely in the browser. `buildCsv` produces the same six fields as a desktop-importable CSV.
 - Note type: `Kashi-gawa Vocabulary` with fields `Term`, `TermFurigana`, `Meaning`, `Sentence`, `SentenceMeaning`, `Notes`.
 - `TermFurigana` and `Sentence` use per-kanji `<ruby>` annotations. `Sentence` ends with `<br><br>- Song + Artist` from the card's source fields.
+- The queue pre-builds the selected format when the modal opens (debounced on card/deck/format changes) so the Export click can call Web Share or trigger a download synchronously. Do not reintroduce a long `await` before `navigator.share()`; it breaks the mobile tap activation.
+- `.apkg` is the recommended mobile format (AnkiDroid/AnkiMobile). CSV is desktop-first; mobile clients may not import text files.
 - The WASM is dynamically imported only on export, so it stays out of the initial bundle. `src/lib/anki.ts` loads the sql.js wasm that matches the resolved sql.js version (do not switch back to the package-bundled wasm; the versions can drift).
 
 ## Tooling

@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { escapeHtml, sentenceToHtml, toFurigana, tokensToSentenceHtml } from './anki';
+import { AnkiCard } from '../types';
+import {
+  buildCsv,
+  csvFileName,
+  escapeHtml,
+  sentenceToHtml,
+  toFurigana,
+  tokensToSentenceHtml,
+} from './anki';
 
 describe('escapeHtml', () => {
   it('escapes HTML-sensitive characters', () => {
@@ -71,5 +79,48 @@ describe('sentenceToHtml', () => {
     expect(sentenceToHtml('空', '空', '<Song>', 'A & B')).toBe(
       '<b>空</b><br><br>- &lt;Song&gt; + A &amp; B'
     );
+  });
+});
+
+describe('buildCsv', () => {
+  const card: AnkiCard = {
+    id: 'test-1',
+    term: '走る',
+    reading: 'はしる',
+    surface: '走った',
+    meaning: 'to run, to drive',
+    sentence: '走った',
+    sentenceFurigana: '<b><ruby>走<rt>はし</rt></ruby>った</b>',
+    sentenceMeaning: 'I ran',
+    notes: 'He said "hi"',
+    sourceTitle: 'Test Song',
+    sourceArtist: 'Test Artist',
+    addedAt: '2026-01-01T00:00:00.000Z',
+  };
+
+  it('writes the six columns and the card content', async () => {
+    const csv = await buildCsv([card]).text();
+    const lines = csv.split('\r\n');
+    expect(lines[0]).toBe('Term,TermFurigana,Meaning,Sentence,SentenceMeaning,Notes');
+    expect(lines[1]).toContain('走る');
+    expect(lines[1]).toContain('<ruby>走<rt>はし</rt></ruby>る');
+    expect(lines[1]).toContain('"to run, to drive"');
+    expect(lines[1]).toContain(
+      '<b><ruby>走<rt>はし</rt></ruby>った</b><br><br>- Test Song + Test Artist'
+    );
+    expect(lines[1]).toContain('He said &quot;hi&quot;');
+  });
+
+  it('quotes fields containing commas', async () => {
+    const csv = await buildCsv([card]).text();
+    expect(csv).toContain('"to run, to drive"');
+  });
+
+  it('rejects an empty selection', () => {
+    expect(() => buildCsv([])).toThrow('No cards selected');
+  });
+
+  it('uses a matching csv filename', () => {
+    expect(csvFileName('Kashi-gawa')).toMatch(/^kashi-gawa-\d{4}-\d{2}-\d{2}\.csv$/);
   });
 });
