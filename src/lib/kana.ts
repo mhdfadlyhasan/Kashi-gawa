@@ -15,6 +15,19 @@ export function katakanaToHiragana(str: string): string {
     .join('');
 }
 
+export function hiraganaToKatakana(str: string): string {
+  return str
+    .split('')
+    .map((char) => {
+      const code = char.charCodeAt(0);
+      if (code >= 0x3041 && code <= 0x3096) {
+        return String.fromCharCode(code + KATAKANA_TO_HIRAGANA_OFFSET);
+      }
+      return char;
+    })
+    .join('');
+}
+
 const ROMAJI_MAP: Record<string, string> = {
   // Hiragana
   あ: 'a',

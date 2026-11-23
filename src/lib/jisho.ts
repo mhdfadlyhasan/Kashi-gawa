@@ -141,6 +141,11 @@ async function searchLocal(word: string): Promise<JishoResult | null> {
   return null;
 }
 
+export async function lookupLocalReading(word: string): Promise<string | null> {
+  const result = await searchLocal(word);
+  return result?.japanese[0]?.reading || null;
+}
+
 export async function searchJisho(word: string): Promise<JishoResult | null> {
   // 1. Direct local lookup
   const direct = await searchLocal(word);

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { katakanaToHiragana, kanaToRomaji, convertReading } from './kana';
+import { katakanaToHiragana, hiraganaToKatakana, kanaToRomaji, convertReading } from './kana';
 
 describe('katakanaToHiragana', () => {
   it('converts katakana to hiragana', () => {
@@ -12,6 +12,20 @@ describe('katakanaToHiragana', () => {
 
   it('leaves non-kana characters unchanged', () => {
     expect(katakanaToHiragana('テストABC')).toBe('てすとABC');
+  });
+});
+
+describe('hiraganaToKatakana', () => {
+  it('converts hiragana to katakana', () => {
+    expect(hiraganaToKatakana('いっぽ')).toBe('イッポ');
+  });
+
+  it('leaves katakana unchanged', () => {
+    expect(hiraganaToKatakana('カタカナ')).toBe('カタカナ');
+  });
+
+  it('leaves non-kana characters unchanged', () => {
+    expect(hiraganaToKatakana('てすとABC')).toBe('テストABC');
   });
 });
 

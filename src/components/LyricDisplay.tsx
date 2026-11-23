@@ -1,9 +1,11 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { KaraokeTokenState, Token, TokenSelection, WordBreakdown } from '../types';
-import { ReadingMode } from '../lib/kana';
+import { ReadingMode, hiraganaToKatakana } from '../lib/kana';
 import { WordToken } from './WordToken';
 import { BreakdownModal } from './BreakdownModal';
 import { DetailMode } from '../hooks/useDetailMode';
+import { applyTokenReading, mergeAdjacentTokens, splitTokenAt } from '../lib/tokenEdit';
+import { lookupLocalReading } from '../lib/jisho';
 
 interface LyricDisplayProps {
   lines: Token[][];
@@ -84,22 +86,28 @@ const LyricDisplayComponent: React.FC<LyricDisplayProps> = ({
 
   const handleMerge = useCallback(
     (lineIdx: number, tokenIdx: number) => {
-      const newLines = lines.map((line, li) => {
-        if (li !== lineIdx) return line;
-        const newTokens = [...line];
-        if (tokenIdx >= newTokens.length - 1) return line;
-        const left = newTokens[tokenIdx];
-        const right = newTokens[tokenIdx + 1];
-        const merged: Token = {
-          ...left,
-          surface_form: left.surface_form + right.surface_form,
-          reading: (left.reading || '') + (right.reading || ''),
-          pronunciation: (left.pronunciation || '') + (right.pronunciation || ''),
-        };
+      const line = lines[lineIdx];
+      if (!line || tokenIdx >= line.length - 1) return;
+
+      const merged = mergeAdjacentTokens(line[tokenIdx], line[tokenIdx + 1]);
+      const newLines = lines.map((current, li) => {
+        if (li !== lineIdx) return current;
+        const newTokens = [...current];
         newTokens.splice(tokenIdx, 2, merged);
         return newTokens;
       });
       onTokensChange?.(newLines);
+
+      lookupLocalReading(merged.surface_form)
+        .then((reading) => {
+          if (!reading) return;
+          const katakana = hiraganaToKatakana(reading);
+          if (katakana === merged.reading) return;
+          onTokensChange?.(applyTokenReading(newLines, lineIdx, merged, katakana));
+        })
+        .catch(() => {
+          // Keep the concatenated reading if the local dictionary is unavailable.
+        });
     },
     [lines, onTokensChange]
   );
@@ -109,26 +117,11 @@ const LyricDisplayComponent: React.FC<LyricDisplayProps> = ({
       const newLines = lines.map((line, li) => {
         if (li !== lineIdx) return line;
         const token = line[tokenIdx];
-        const text = token.surface_form;
-        if (splitAt <= 0 || splitAt >= text.length) return line;
-        const leftText = text.slice(0, splitAt);
-        const rightText = text.slice(splitAt);
-
-        const left: Token = {
-          ...token,
-          surface_form: leftText,
-          reading: (token.reading || '').slice(0, splitAt),
-          pronunciation: (token.pronunciation || '').slice(0, splitAt),
-        };
-        const right: Token = {
-          ...token,
-          surface_form: rightText,
-          reading: (token.reading || '').slice(splitAt),
-          pronunciation: (token.pronunciation || '').slice(splitAt),
-        };
+        const halves = splitTokenAt(token, splitAt);
+        if (!halves) return line;
 
         const newTokens = [...line];
-        newTokens.splice(tokenIdx, 1, left, right);
+        newTokens.splice(tokenIdx, 1, ...halves);
         return newTokens;
       });
       onTokensChange?.(newLines);
