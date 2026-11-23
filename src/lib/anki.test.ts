@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { AnkiCard } from '../types';
 import {
   buildCsv,
+  buildImageField,
   csvFileName,
   escapeHtml,
   findHighlightIndex,
@@ -133,6 +134,24 @@ describe('findHighlightIndex', () => {
   });
 });
 
+describe('buildImageField', () => {
+  it('returns the trimmed image URL', () => {
+    expect(buildImageField({ image: '  https://example.com/a.png ' } as AnkiCard)).toBe(
+      'https://example.com/a.png'
+    );
+  });
+
+  it('returns an empty string when no image is set', () => {
+    expect(buildImageField({} as AnkiCard)).toBe('');
+  });
+
+  it('escapes attribute-breaking characters', () => {
+    expect(buildImageField({ image: 'https://x.test/?a=1&b="2"' } as AnkiCard)).toBe(
+      'https://x.test/?a=1&amp;b=&quot;2&quot;'
+    );
+  });
+});
+
 describe('buildCsv', () => {
   const card: AnkiCard = {
     id: 'test-1',
@@ -144,15 +163,16 @@ describe('buildCsv', () => {
     sentenceFurigana: '<b><ruby>走<rt>はし</rt></ruby>った</b>',
     sentenceMeaning: 'I ran',
     notes: 'He said "hi"',
+    image: 'https://example.com/cat.png',
     sourceTitle: 'Test Song',
     sourceArtist: 'Test Artist',
     addedAt: '2026-01-01T00:00:00.000Z',
   };
 
-  it('writes the six columns and the card content', async () => {
+  it('writes the seven columns and the card content', async () => {
     const csv = await buildCsv([card]).text();
     const lines = csv.split('\r\n');
-    expect(lines[0]).toBe('Term,TermFurigana,Meaning,Sentence,SentenceMeaning,Notes');
+    expect(lines[0]).toBe('Term,TermFurigana,Meaning,Sentence,SentenceMeaning,Notes,Image');
     expect(lines[1]).toContain('走る');
     expect(lines[1]).toContain('<ruby>走<rt>はし</rt></ruby>る');
     expect(lines[1]).toContain('"to run, to drive"');
@@ -161,6 +181,7 @@ describe('buildCsv', () => {
     );
     expect(lines[1]).toContain('I ran');
     expect(lines[1]).toContain('He said &quot;hi&quot;');
+    expect(lines[1]).toContain('https://example.com/cat.png');
   });
 
   it('omits the source line for a custom sentence', async () => {

@@ -160,6 +160,7 @@ export const AnkiCardEditor: React.FC<AnkiCardEditorProps> = ({
       sentenceFurigana,
       sentenceMeaning: card.sentenceMeaning.trim(),
       notes: card.notes.trim(),
+      image: card.image?.trim() || undefined,
     });
   };
 
@@ -302,6 +303,22 @@ export const AnkiCardEditor: React.FC<AnkiCardEditorProps> = ({
                 placeholder="Grammar notes, mnemonics, …"
                 className={inputClass}
               />
+            </label>
+
+            <label className="block">
+              <span className="block text-xs text-gray-500 uppercase tracking-wide mb-1">
+                Image URL
+              </span>
+              <input
+                type="url"
+                value={card.image ?? ''}
+                onChange={(e) => update('image', e.target.value)}
+                placeholder="https://… (optional)"
+                className={inputClass}
+              />
+              <p className="mt-1 text-[11px] text-gray-400">
+                Shown on the answer side. Leave blank to add it later in Anki.
+              </p>
             </label>
           </div>
 

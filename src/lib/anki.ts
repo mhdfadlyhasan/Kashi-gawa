@@ -1,8 +1,16 @@
 import { AnkiCard } from '../types';
 import { katakanaToHiragana } from './kana';
 
-const MODEL_NAME = 'Kashi-gawa Vocabulary';
-const FIELD_NAMES = ['Term', 'TermFurigana', 'Meaning', 'Sentence', 'SentenceMeaning', 'Notes'];
+const MODEL_NAME = 'Kashi-gawa Vocabulary v2';
+const FIELD_NAMES = [
+  'Term',
+  'TermFurigana',
+  'Meaning',
+  'Sentence',
+  'SentenceMeaning',
+  'Notes',
+  'Image',
+];
 
 const CARD_CSS = `
 .card {
@@ -33,6 +41,13 @@ ruby rt {
 .sentence-meaning {
   margin-top: 8px;
   color: #4b5563;
+}
+.image {
+  margin-top: 16px;
+}
+.image img {
+  max-width: 100%;
+  border-radius: 8px;
 }
 .notes {
   margin-top: 16px;
@@ -201,6 +216,10 @@ export function buildSentenceMeaningField(card: AnkiCard): string {
   return withLineBreaks(card.sentenceMeaning);
 }
 
+export function buildImageField(card: AnkiCard): string {
+  return escapeHtml(card.image?.trim() ?? '');
+}
+
 function sanitizeTag(value: string): string {
   return value.trim().replace(/\s+/g, '_');
 }
@@ -233,6 +252,7 @@ export async function buildApkg(cards: AnkiCard[], deckName: string): Promise<Bl
             '<div class="meaning">{{Meaning}}</div>' +
             '<div class="sentence">{{Sentence}}</div>' +
             '<div class="sentence-meaning">{{SentenceMeaning}}</div>' +
+            '{{#Image}}<div class="image"><img src="{{Image}}" alt=""></div>{{/Image}}' +
             '{{#Notes}}<div class="notes">{{Notes}}</div>{{/Notes}}',
           requiredFields: ['Term'],
         },
@@ -248,6 +268,7 @@ export async function buildApkg(cards: AnkiCard[], deckName: string): Promise<Bl
           Sentence: buildSentenceField(card),
           SentenceMeaning: buildSentenceMeaningField(card),
           Notes: withLineBreaks(card.notes),
+          Image: buildImageField(card),
         },
         noteId: card.id,
         tags: ['kashi-gawa', sanitizeTag(card.sourceArtist)].filter(Boolean),
@@ -262,7 +283,15 @@ export async function buildApkg(cards: AnkiCard[], deckName: string): Promise<Bl
   }
 }
 
-const CSV_HEADERS = ['Term', 'TermFurigana', 'Meaning', 'Sentence', 'SentenceMeaning', 'Notes'];
+const CSV_HEADERS = [
+  'Term',
+  'TermFurigana',
+  'Meaning',
+  'Sentence',
+  'SentenceMeaning',
+  'Notes',
+  'Image',
+];
 
 function csvEscape(value: string): string {
   if (!/[",\r\n]/.test(value)) return value;
@@ -281,6 +310,7 @@ export function buildCsv(cards: AnkiCard[]): Blob {
       buildSentenceField(card),
       buildSentenceMeaningField(card),
       withLineBreaks(card.notes),
+      buildImageField(card),
     ]),
   ];
 

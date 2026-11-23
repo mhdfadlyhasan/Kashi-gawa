@@ -100,6 +100,7 @@ export interface AnkiCard {
   sentenceFurigana?: string;
   sentenceMeaning: string;
   notes: string;
+  image?: string;
   sourceTitle: string;
   sourceArtist: string;
   addedAt: string;
