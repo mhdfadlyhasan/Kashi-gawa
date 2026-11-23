@@ -96,6 +96,7 @@ export interface AnkiCard {
   surface: string;
   meaning: string;
   sentence: string;
+  sourceSentence?: string;
   sentenceFurigana?: string;
   sentenceMeaning: string;
   notes: string;

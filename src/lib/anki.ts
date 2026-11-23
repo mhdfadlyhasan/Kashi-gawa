@@ -18,12 +18,17 @@ ruby rt {
   font-size: 0.5em;
   color: #6b7280;
 }
+.term {
+  font-size: 88px;
+  line-height: 1.2;
+}
 .meaning {
   font-size: 1.15em;
   font-weight: 600;
 }
 .sentence {
   margin-top: 16px;
+  font-size: 2em;
 }
 .sentence-meaning {
   margin-top: 8px;
@@ -163,11 +168,37 @@ export function buildSentenceField(card: AnkiCard): string {
   const body =
     card.sentenceFurigana?.trim() ||
     highlightSentenceBody(card.sentence, card.surface || card.term);
-  return body + sourceLine(card.sourceTitle, card.sourceArtist);
+  return isCustomSentence(card) ? body : body + sourceLine(card.sourceTitle, card.sourceArtist);
 }
 
 function withLineBreaks(value: string): string {
   return escapeHtml(value).replace(/\n/g, '<br>');
+}
+
+export function isCustomSentence(card: AnkiCard): boolean {
+  if (!card.sourceSentence) return false;
+  return card.sentence.trim() !== card.sourceSentence.trim();
+}
+
+export function findHighlightIndex(
+  tokens: { surface: string; basicForm: string }[],
+  surface: string,
+  term: string
+): number {
+  const targets = [surface.trim(), term.trim()].filter(Boolean);
+  for (const target of targets) {
+    const index = tokens.findIndex((token) => token.surface === target);
+    if (index !== -1) return index;
+  }
+  for (const target of targets) {
+    const index = tokens.findIndex((token) => token.basicForm === target);
+    if (index !== -1) return index;
+  }
+  return -1;
+}
+
+export function buildSentenceMeaningField(card: AnkiCard): string {
+  return withLineBreaks(card.sentenceMeaning);
 }
 
 function sanitizeTag(value: string): string {
@@ -195,10 +226,11 @@ export async function buildApkg(cards: AnkiCard[], deckName: string): Promise<Bl
       templates: [
         {
           name: 'Recognition',
-          questionFormat: '{{TermFurigana}}',
+          questionFormat: '<div class="term">{{TermFurigana}}</div>',
           answerFormat:
-            '<div class="meaning">{{Meaning}}</div>' +
+            '<div class="term">{{TermFurigana}}</div>' +
             '<hr id="answer">' +
+            '<div class="meaning">{{Meaning}}</div>' +
             '<div class="sentence">{{Sentence}}</div>' +
             '<div class="sentence-meaning">{{SentenceMeaning}}</div>' +
             '{{#Notes}}<div class="notes">{{Notes}}</div>{{/Notes}}',
@@ -214,7 +246,7 @@ export async function buildApkg(cards: AnkiCard[], deckName: string): Promise<Bl
           TermFurigana: toFurigana(card.term, card.reading),
           Meaning: withLineBreaks(card.meaning),
           Sentence: buildSentenceField(card),
-          SentenceMeaning: withLineBreaks(card.sentenceMeaning),
+          SentenceMeaning: buildSentenceMeaningField(card),
           Notes: withLineBreaks(card.notes),
         },
         noteId: card.id,
@@ -247,7 +279,7 @@ export function buildCsv(cards: AnkiCard[]): Blob {
       toFurigana(card.term, card.reading),
       withLineBreaks(card.meaning),
       buildSentenceField(card),
-      withLineBreaks(card.sentenceMeaning),
+      buildSentenceMeaningField(card),
       withLineBreaks(card.notes),
     ]),
   ];

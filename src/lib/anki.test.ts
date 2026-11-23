@@ -4,6 +4,8 @@ import {
   buildCsv,
   csvFileName,
   escapeHtml,
+  findHighlightIndex,
+  isCustomSentence,
   sentenceToHtml,
   toFurigana,
   tokensToSentenceHtml,
@@ -82,6 +84,55 @@ describe('sentenceToHtml', () => {
   });
 });
 
+describe('isCustomSentence', () => {
+  const base: AnkiCard = {
+    id: 'custom-1',
+    term: '走る',
+    reading: 'はしる',
+    surface: '走った',
+    meaning: 'to run',
+    sentence: '走った',
+    sourceSentence: '走った',
+    sentenceMeaning: '',
+    notes: '',
+    sourceTitle: 'Song',
+    sourceArtist: 'Artist',
+    addedAt: '2026-01-01T00:00:00.000Z',
+  };
+
+  it('is false when the sentence matches the source lyric line', () => {
+    expect(isCustomSentence(base)).toBe(false);
+  });
+
+  it('is true when the sentence was edited', () => {
+    expect(isCustomSentence({ ...base, sentence: '今日は走らない' })).toBe(true);
+  });
+
+  it('is false for legacy cards without a source sentence', () => {
+    expect(isCustomSentence({ ...base, sourceSentence: undefined })).toBe(false);
+  });
+});
+
+describe('findHighlightIndex', () => {
+  const tokens = [
+    { surface: '今日', basicForm: '今日' },
+    { surface: '走ら', basicForm: '走る' },
+    { surface: 'ない', basicForm: 'ない' },
+  ];
+
+  it('prefers an exact surface match', () => {
+    expect(findHighlightIndex(tokens, '走ら', '走る')).toBe(1);
+  });
+
+  it('falls back to the dictionary form', () => {
+    expect(findHighlightIndex(tokens, 'missing', '走る')).toBe(1);
+  });
+
+  it('returns -1 when nothing matches', () => {
+    expect(findHighlightIndex(tokens, 'missing', 'missing')).toBe(-1);
+  });
+});
+
 describe('buildCsv', () => {
   const card: AnkiCard = {
     id: 'test-1',
@@ -108,7 +159,21 @@ describe('buildCsv', () => {
     expect(lines[1]).toContain(
       '<b><ruby>走<rt>はし</rt></ruby>った</b><br><br>- Test Song + Test Artist'
     );
+    expect(lines[1]).toContain('I ran');
     expect(lines[1]).toContain('He said &quot;hi&quot;');
+  });
+
+  it('omits the source line for a custom sentence', async () => {
+    const custom: AnkiCard = {
+      ...card,
+      sentence: '今日は走らない',
+      sourceSentence: '走った',
+      sentenceFurigana: undefined,
+    };
+    const csv = await buildCsv([custom]).text();
+    const lines = csv.split('\r\n');
+    expect(lines[1]).toContain('今日は走らない');
+    expect(lines[1]).not.toContain('Test Song');
   });
 
   it('quotes fields containing commas', async () => {

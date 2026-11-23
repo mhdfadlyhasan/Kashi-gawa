@@ -338,6 +338,7 @@ function App() {
         breakdown.dictionaryReading ||
         (term === token.surface_form && token.reading !== '*' ? token.reading : '');
       const reading = rawReading ? convertReading(rawReading, 'hiragana') : '';
+      const sentence = line.map((part) => part.surface_form).join('');
 
       setAnkiEditor({
         id,
@@ -345,7 +346,8 @@ function App() {
         reading,
         surface: token.surface_form,
         meaning: breakdown.meanings.join('; '),
-        sentence: line.map((part) => part.surface_form).join(''),
+        sentence,
+        sourceSentence: sentence,
         sentenceFurigana: tokensToSentenceHtml(
           line.map((part) => ({ surface: part.surface_form, reading: part.reading || '' })),
           tokenIdx

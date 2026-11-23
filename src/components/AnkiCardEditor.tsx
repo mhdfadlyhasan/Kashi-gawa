@@ -1,6 +1,8 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { AnkiCard } from '../types';
 import { DEFAULT_ANKI_DECK } from '../hooks/useAnkiCards';
+import { tokenizeText } from '../hooks/useTokenizer';
+import { findHighlightIndex, tokensToSentenceHtml } from '../lib/anki';
 import { translateJapanese } from '../lib/translate';
 import { showToast } from '../lib/toast';
 
@@ -24,25 +26,89 @@ export const AnkiCardEditor: React.FC<AnkiCardEditorProps> = ({
 }) => {
   const [card, setCard] = useState<AnkiCard>(initial);
   const [isTranslating, setIsTranslating] = useState(false);
+  const [isTokenizing, setIsTokenizing] = useState(false);
+  const lastTokenizedRef = useRef(
+    initial.sentenceFurigana
+      ? `${initial.sentence.trim()}||${initial.surface}||${initial.term}`
+      : ''
+  );
+  const lastTranslatedRef = useRef(initial.sentenceMeaning.trim() ? initial.sentence.trim() : '');
 
   const update = useCallback(<K extends keyof AnkiCard>(key: K, value: AnkiCard[K]) => {
     setCard((prev) => ({ ...prev, [key]: value }));
   }, []);
 
-  const translate = useCallback(async () => {
-    if (!card.sentence.trim()) return;
+  const buildSentenceFurigana = useCallback(
+    async (text: string, surface: string, term: string): Promise<string> => {
+      const trimmed = text.trim();
+      if (!trimmed) return '';
+      const tokens = await tokenizeText(trimmed);
+      const mapped = tokens.map((token) => ({
+        surface: token.surface_form,
+        reading: token.reading || '',
+        basicForm: token.basic_form,
+      }));
+      return tokensToSentenceHtml(mapped, findHighlightIndex(mapped, surface, term));
+    },
+    []
+  );
+
+  useEffect(() => {
+    const trimmed = card.sentence.trim();
+    const key = `${trimmed}||${card.surface}||${card.term}`;
+
+    if (!trimmed) {
+      lastTokenizedRef.current = key;
+      setCard((prev) => (prev.sentenceFurigana ? { ...prev, sentenceFurigana: '' } : prev));
+      return;
+    }
+
+    if (key === lastTokenizedRef.current && card.sentenceFurigana) return;
+
+    const timer = setTimeout(() => {
+      setIsTokenizing(true);
+      buildSentenceFurigana(trimmed, card.surface, card.term)
+        .then((html) => {
+          lastTokenizedRef.current = key;
+          setCard((prev) =>
+            prev.sentence.trim() === trimmed ? { ...prev, sentenceFurigana: html } : prev
+          );
+        })
+        .catch(() => {
+          showToast('Could not analyze this sentence — furigana skipped');
+        })
+        .finally(() => setIsTokenizing(false));
+    }, 5000);
+
+    return () => clearTimeout(timer);
+  }, [card.sentence, card.surface, card.term, card.sentenceFurigana, buildSentenceFurigana]);
+
+  const translateSentence = useCallback(async (text: string) => {
+    const trimmed = text.trim();
+    if (!trimmed) return;
     setIsTranslating(true);
     try {
-      const result = await translateJapanese(card.sentence);
+      const result = await translateJapanese(trimmed);
       if (result) {
-        update('sentenceMeaning', result);
+        lastTranslatedRef.current = trimmed;
+        setCard((prev) => ({ ...prev, sentenceMeaning: result }));
       } else {
         showToast('Could not translate this sentence — you can type it in');
       }
     } finally {
       setIsTranslating(false);
     }
-  }, [card.sentence, update]);
+  }, []);
+
+  const translate = useCallback(() => {
+    void translateSentence(card.sentence);
+  }, [card.sentence, translateSentence]);
+
+  const handleSentenceBlur = () => {
+    const trimmed = card.sentence.trim();
+    if (!trimmed || trimmed === lastTranslatedRef.current) return;
+    void translateSentence(trimmed);
+  };
 
   useEffect(() => {
     if (initial.sentenceMeaning.trim() || !initial.sentence.trim()) return;
@@ -51,6 +117,7 @@ export const AnkiCardEditor: React.FC<AnkiCardEditorProps> = ({
     translateJapanese(initial.sentence)
       .then((result) => {
         if (!cancelled && result) {
+          lastTranslatedRef.current = initial.sentence.trim();
           setCard((prev) =>
             prev.sentenceMeaning.trim() ? prev : { ...prev, sentenceMeaning: result }
           );
@@ -67,21 +134,37 @@ export const AnkiCardEditor: React.FC<AnkiCardEditorProps> = ({
     };
   }, [initial.sentence, initial.sentenceMeaning]);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!card.term.trim()) {
       showToast('Term cannot be empty');
       return;
     }
+
+    const trimmedSentence = card.sentence.trim();
+    let sentenceFurigana = card.sentenceFurigana;
+    if (trimmedSentence && !sentenceFurigana) {
+      try {
+        sentenceFurigana = await buildSentenceFurigana(trimmedSentence, card.surface, card.term);
+      } catch {
+        showToast('Could not analyze this sentence — furigana skipped');
+      }
+    }
+
     onSave({
       ...card,
       term: card.term.trim(),
       reading: card.reading.trim(),
       meaning: card.meaning.trim(),
-      sentence: card.sentence.trim(),
+      sentence: trimmedSentence,
+      sourceSentence: card.sourceSentence ?? initial.sentence,
+      sentenceFurigana,
       sentenceMeaning: card.sentenceMeaning.trim(),
       notes: card.notes.trim(),
     });
   };
+
+  const sourceSentence = card.sourceSentence ?? initial.sentence;
+  const isCustom = card.sentence.trim() !== sourceSentence.trim();
 
   return (
     <div className="fixed inset-0 z-[60] bg-black/30 overflow-y-auto" onClick={onClose}>
@@ -161,6 +244,7 @@ export const AnkiCardEditor: React.FC<AnkiCardEditorProps> = ({
                 onChange={(e) =>
                   setCard((prev) => ({ ...prev, sentence: e.target.value, sentenceFurigana: '' }))
                 }
+                onBlur={handleSentenceBlur}
                 rows={2}
                 className={inputClass}
               />
@@ -169,6 +253,15 @@ export const AnkiCardEditor: React.FC<AnkiCardEditorProps> = ({
                   className="mt-1 text-sm text-gray-600"
                   dangerouslySetInnerHTML={{ __html: card.sentenceFurigana }}
                 />
+              )}
+              {isTokenizing && (
+                <p className="mt-1 text-[11px] text-gray-400">Analyzing sentence…</p>
+              )}
+              {!isCustom && (card.sourceTitle.trim() || card.sourceArtist.trim()) && (
+                <p className="mt-1 text-[11px] text-gray-400 truncate">
+                  -{' '}
+                  {[card.sourceTitle.trim(), card.sourceArtist.trim()].filter(Boolean).join(' + ')}
+                </p>
               )}
             </label>
 
@@ -226,7 +319,7 @@ export const AnkiCardEditor: React.FC<AnkiCardEditorProps> = ({
               </button>
               <button
                 type="button"
-                onClick={handleSave}
+                onClick={() => void handleSave()}
                 className="px-3 py-1.5 text-sm bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition"
               >
                 Save card
