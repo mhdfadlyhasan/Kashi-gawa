@@ -5,6 +5,7 @@ import { tokenizeText } from '../hooks/useTokenizer';
 import { findHighlightIndex, tokensToSentenceHtml } from '../lib/anki';
 import { translateJapanese } from '../lib/translate';
 import { showToast } from '../lib/toast';
+import { SpeakerButton } from './SpeakerButton';
 
 interface AnkiCardEditorProps {
   initial: AnkiCard;
@@ -166,6 +167,7 @@ export const AnkiCardEditor: React.FC<AnkiCardEditorProps> = ({
 
   const sourceSentence = card.sourceSentence ?? initial.sentence;
   const isCustom = card.sentence.trim() !== sourceSentence.trim();
+  const previewText = card.reading.trim() || card.term.trim();
 
   return (
     <div className="fixed inset-0 z-[70] bg-black/30 overflow-y-auto" onClick={onClose}>
@@ -200,18 +202,23 @@ export const AnkiCardEditor: React.FC<AnkiCardEditorProps> = ({
 
           <div className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <label className="block">
-                <span className="block text-xs text-gray-500 uppercase tracking-wide mb-1">
-                  Term
-                </span>
+              <div>
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <span className="block text-xs text-gray-500 uppercase tracking-wide">Term</span>
+                  <SpeakerButton
+                    text={previewText}
+                    className="!p-1"
+                    title="Preview pronunciation"
+                  />
+                </div>
                 <input
                   type="text"
                   value={card.term}
                   onChange={(e) => update('term', e.target.value)}
                   className={inputClass}
                 />
-              </label>
-              <label className="block">
+              </div>
+              <div>
                 <span className="block text-xs text-gray-500 uppercase tracking-wide mb-1">
                   Reading (furigana)
                 </span>
@@ -221,7 +228,7 @@ export const AnkiCardEditor: React.FC<AnkiCardEditorProps> = ({
                   onChange={(e) => update('reading', e.target.value)}
                   className={inputClass}
                 />
-              </label>
+              </div>
             </div>
 
             <label className="block">

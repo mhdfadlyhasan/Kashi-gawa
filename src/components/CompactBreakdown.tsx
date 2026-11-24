@@ -2,6 +2,7 @@ import React from 'react';
 import { Token, WordBreakdown } from '../types';
 import { ReadingMode, convertReading } from '../lib/kana';
 import { useWordBreakdown } from '../hooks/useWordBreakdown';
+import { SpeakerButton } from './SpeakerButton';
 
 interface CompactBreakdownProps {
   token: Token;
@@ -21,6 +22,11 @@ export const CompactBreakdown: React.FC<CompactBreakdownProps> = ({
   const displayedReading = token.reading
     ? convertReading(token.reading, readingMode === 'normal' ? 'katakana' : readingMode)
     : '';
+
+  const speakText =
+    token.reading && token.reading !== '*'
+      ? token.reading
+      : breakdown?.dictionaryForm || token.surface_form;
 
   return (
     <div className="sticky top-0 z-20 bg-white border border-gray-300 rounded-lg shadow-lg p-3 md:p-4 mb-4 relative overflow-hidden">
@@ -46,6 +52,7 @@ export const CompactBreakdown: React.FC<CompactBreakdownProps> = ({
               {breakdown.grammarExplanation}
             </div>
           )}
+          <SpeakerButton text={speakText} className="!p-1.5" />
         </div>
         <button
           onClick={onClose}

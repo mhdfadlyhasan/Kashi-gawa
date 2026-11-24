@@ -3,6 +3,7 @@ import { Token, WordBreakdown } from '../types';
 import { ReadingMode, convertReading } from '../lib/kana';
 import { getPosLabel } from '../lib/colorMap';
 import { useWordBreakdown } from '../hooks/useWordBreakdown';
+import { SpeakerButton } from './SpeakerButton';
 
 interface BreakdownModalProps {
   token: Token;
@@ -23,6 +24,11 @@ export const BreakdownModal: React.FC<BreakdownModalProps> = ({
     ? convertReading(token.reading, readingMode === 'normal' ? 'katakana' : readingMode)
     : '';
 
+  const speakText =
+    token.reading && token.reading !== '*'
+      ? token.reading
+      : breakdown?.dictionaryForm || token.surface_form;
+
   return (
     <div className="fixed inset-0 z-[60] bg-black/30 overflow-y-auto" onClick={onClose}>
       <div className="min-h-screen flex items-center justify-center p-4">
@@ -39,7 +45,12 @@ export const BreakdownModal: React.FC<BreakdownModalProps> = ({
 
           <div className="text-center mb-6">
             <div className="text-3xl font-bold mb-2">{token.surface_form}</div>
-            {displayedReading && <div className="text-lg text-gray-500">{displayedReading}</div>}
+            <div className="flex items-center justify-center gap-2">
+              {displayedReading && (
+                <span className="text-lg text-gray-500">{displayedReading}</span>
+              )}
+              <SpeakerButton text={speakText} className="!p-1.5" />
+            </div>
             <div className="text-sm text-gray-400 mt-1">{getPosLabel(token.pos)}</div>
           </div>
 
