@@ -24,7 +24,7 @@ export const BreakdownModal: React.FC<BreakdownModalProps> = ({
     : '';
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/30 overflow-y-auto" onClick={onClose}>
+    <div className="fixed inset-0 z-[60] bg-black/30 overflow-y-auto" onClick={onClose}>
       <div className="min-h-screen flex items-center justify-center p-4">
         <div
           className="bg-white rounded-xl shadow-2xl max-w-sm md:max-w-md w-full p-6 relative"

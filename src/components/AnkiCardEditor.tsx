@@ -168,7 +168,7 @@ export const AnkiCardEditor: React.FC<AnkiCardEditorProps> = ({
   const isCustom = card.sentence.trim() !== sourceSentence.trim();
 
   return (
-    <div className="fixed inset-0 z-[60] bg-black/30 overflow-y-auto" onClick={onClose}>
+    <div className="fixed inset-0 z-[70] bg-black/30 overflow-y-auto" onClick={onClose}>
       <div className="min-h-screen flex items-start sm:items-center justify-center p-4">
         <div
           className="bg-white rounded-xl shadow-2xl max-w-lg w-full p-6 relative"

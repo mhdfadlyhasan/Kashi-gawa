@@ -384,7 +384,7 @@ function App() {
   return (
     <div className="h-screen w-full flex flex-col bg-gray-50 overflow-hidden">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 px-4 py-3 md:px-6 md:py-4 flex items-center gap-2 md:gap-4 shadow-sm relative z-30">
+      <header className="bg-white border-b border-gray-200 px-4 py-3 md:px-6 md:py-4 flex items-center gap-2 md:gap-4 shadow-sm relative z-50">
         <button
           className="md:hidden p-1.5 rounded-lg hover:bg-gray-100 transition"
           onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -448,7 +448,7 @@ function App() {
         {/* Mobile sidebar overlay */}
         {sidebarOpen && (
           <div
-            className="fixed inset-0 bg-black/50 z-30 md:hidden"
+            className="fixed inset-0 bg-black/50 z-40 md:hidden"
             onClick={() => setSidebarOpen(false)}
           />
         )}
@@ -489,7 +489,7 @@ function App() {
             <div>
               <div
                 ref={headerRef}
-                className={`sticky top-0 z-30 bg-gray-50/95 backdrop-blur-sm mb-6 pt-4 md:pt-8 pb-2 -mx-2 px-2 rounded-lg ${detailMode === 'compact' ? 'min-h-[120px]' : ''}`}
+                className={`sticky top-0 z-20 bg-gray-50/95 backdrop-blur-sm mb-6 pt-4 md:pt-8 pb-2 -mx-2 px-2 rounded-lg ${detailMode === 'compact' ? 'min-h-[120px]' : ''}`}
               >
                 {detailMode === 'compact' && selection ? (
                   <CompactBreakdown
