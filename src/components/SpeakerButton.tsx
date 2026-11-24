@@ -1,5 +1,5 @@
-import React from 'react';
-import { isSpeechSupported, speakJapanese } from '../lib/audio';
+import React, { useState } from 'react';
+import { isSpeechSupported, playJapanese } from '../lib/audio';
 import { showToast } from '../lib/toast';
 
 interface SpeakerButtonProps {
@@ -13,27 +13,52 @@ export const SpeakerButton: React.FC<SpeakerButtonProps> = ({
   className = '',
   title = 'Play pronunciation',
 }) => {
-  const handleClick = (event: React.MouseEvent) => {
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  const handleClick = async (event: React.MouseEvent) => {
     event.stopPropagation();
+    if (isPlaying) return;
+
     if (!isSpeechSupported()) {
-      showToast('Pronunciation playback is not supported in this browser');
+      showToast('This browser does not support speech playback');
       return;
     }
-    if (!speakJapanese(text)) {
-      showToast('Nothing to pronounce');
+
+    setIsPlaying(true);
+    const result = await playJapanese(text);
+    setIsPlaying(false);
+
+    if (result.ok) return;
+
+    switch (result.reason) {
+      case 'empty':
+        showToast('Nothing to pronounce');
+        break;
+      case 'no-voice':
+        showToast('No Japanese voice found — install or enable one in your system settings');
+        break;
+      case 'no-output':
+        showToast('Speech did not play — no Japanese voice or audio output available');
+        break;
+      case 'error':
+        showToast(`Speech failed: ${result.detail ?? 'unknown error'}`);
+        break;
+      default:
+        showToast('Speech playback is not supported in this browser');
     }
   };
 
   return (
     <button
       type="button"
-      onClick={handleClick}
-      className={`p-2 rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 transition flex-shrink-0 ${className}`}
+      onClick={(event) => void handleClick(event)}
+      disabled={isPlaying}
+      className={`p-2 rounded-lg border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 transition flex-shrink-0 disabled:opacity-50 ${className}`}
       title={title}
       aria-label={title}
     >
       <svg
-        className="w-4 h-4"
+        className={`w-4 h-4 ${isPlaying ? 'animate-pulse' : ''}`}
         fill="none"
         stroke="currentColor"
         strokeWidth="2"
