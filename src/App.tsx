@@ -7,6 +7,7 @@ import { useReadingMode } from './hooks/useReadingMode';
 import { useFirstVisit } from './hooks/useFirstVisit';
 import { useDetailMode } from './hooks/useDetailMode';
 import { useAnkiCards } from './hooks/useAnkiCards';
+import { useUndoRedo } from './hooks/useUndoRedo';
 import { SearchBar } from './components/SearchBar';
 import { SongLibrary } from './components/SongLibrary';
 import { LyricDisplay } from './components/LyricDisplay';
@@ -62,6 +63,14 @@ function App() {
 
   const [activeId, setActiveId] = useState<number | null>(null);
   const [tokens, setTokens] = useState<Token[][]>([]);
+  const {
+    record: recordTokenHistory,
+    reset: resetTokenHistory,
+    undo: undoTokens,
+    redo: redoTokens,
+    canUndo,
+    canRedo,
+  } = useUndoRedo<Token[][]>();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [selection, setSelection] = useState<TokenSelection | null>(null);
@@ -155,12 +164,13 @@ function App() {
           plainLyrics: track.plainLyrics,
           syncedLyrics: track.syncedLyrics,
         });
+        resetTokenHistory();
         setTokens(toks);
         updateTokens(track.id, toks);
         updateSong(track.id, { tokensSource: source });
       }
     },
-    [selectTrack, addSong, tokenizerReady, updateTokens, updateSong]
+    [selectTrack, addSong, tokenizerReady, updateTokens, updateSong, resetTokenHistory]
   );
 
   // Load default song on first visit
@@ -184,6 +194,7 @@ function App() {
       setActiveId(song.id);
       setIsKaraoke(false);
       setKaraokeElapsedMs(0);
+      resetTokenHistory();
       if (song.tokens && song.tokens.length > 0) {
         setTokens(song.tokens);
       } else if (tokenizerReady) {
@@ -202,7 +213,7 @@ function App() {
         updateReadings(song.id, titleReading, artistReading);
       }
     },
-    [tokenizerReady, updateTokens, updateReadings, updateSong]
+    [tokenizerReady, updateTokens, updateReadings, updateSong, resetTokenHistory]
   );
 
   // Tokenize current track when tokenizer becomes ready
@@ -212,11 +223,12 @@ function App() {
     if (!song || (song.tokens && song.tokens.length > 0)) return;
 
     tokenizeSongLyrics(song).then(({ tokens: toks, source }) => {
+      resetTokenHistory();
       setTokens(toks);
       updateTokens(activeId, toks);
       updateSong(activeId, { tokensSource: source });
     });
-  }, [activeId, tokenizerReady, updateTokens, updateSong, getSong]);
+  }, [activeId, tokenizerReady, updateTokens, updateSong, getSong, resetTokenHistory]);
 
   const handleReparse = useCallback(async () => {
     if (!activeId || !tokenizerReady) return;
@@ -230,20 +242,61 @@ function App() {
     );
     if (!confirmed) return;
 
+    resetTokenHistory();
     setTokens([]);
     const { tokens: toks, source } = await tokenizeSongLyrics(song);
     setTokens(toks);
     updateTokens(activeId, toks);
     updateSong(activeId, { tokensSource: source });
-  }, [activeId, tokenizerReady, getSong, updateTokens, updateSong, readingMode]);
+  }, [activeId, tokenizerReady, getSong, updateTokens, updateSong, readingMode, resetTokenHistory]);
 
   const handleTokensChange = useCallback(
     (newLines: Token[][]) => {
+      recordTokenHistory(tokens);
       setTokens(newLines);
       if (activeId) updateTokens(activeId, newLines);
     },
-    [activeId, updateTokens]
+    [tokens, activeId, updateTokens, recordTokenHistory]
   );
+
+  const handleUndo = useCallback(() => {
+    const previous = undoTokens(tokens);
+    if (previous === null) return;
+    setTokens(previous);
+    if (activeId) updateTokens(activeId, previous);
+  }, [tokens, activeId, updateTokens, undoTokens]);
+
+  const handleRedo = useCallback(() => {
+    const next = redoTokens(tokens);
+    if (next === null) return;
+    setTokens(next);
+    if (activeId) updateTokens(activeId, next);
+  }, [tokens, activeId, updateTokens, redoTokens]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
+      ) {
+        return;
+      }
+      if (!event.metaKey && !event.ctrlKey) return;
+
+      const key = event.key.toLowerCase();
+      if (key === 'z') {
+        event.preventDefault();
+        if (event.shiftKey) handleRedo();
+        else handleUndo();
+      } else if (key === 'y') {
+        event.preventDefault();
+        handleRedo();
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [handleUndo, handleRedo]);
 
   const handleToggleKaraoke = useCallback(async () => {
     if (isKaraoke) {
@@ -282,6 +335,7 @@ function App() {
         showToast('Could not parse the synced lyrics');
         return;
       }
+      resetTokenHistory();
       setTokens(toks);
       updateTokens(song.id, toks);
       updateSong(song.id, { tokensSource: 'synced' });
@@ -289,7 +343,16 @@ function App() {
 
     setKaraokeElapsedMs(0);
     setIsKaraoke(true);
-  }, [isKaraoke, activeSong, tokens.length, selectTrack, updateSong, updateTokens, readingMode]);
+  }, [
+    isKaraoke,
+    activeSong,
+    tokens.length,
+    selectTrack,
+    updateSong,
+    updateTokens,
+    readingMode,
+    resetTokenHistory,
+  ]);
 
   const handleSetYouTube = useCallback(
     (input: string) => {
@@ -507,6 +570,62 @@ function App() {
                       <p className="text-gray-500 truncate">{displayArtist}</p>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
+                      {isEditMode && (
+                        <>
+                          <button
+                            onClick={handleUndo}
+                            disabled={!canUndo}
+                            className="p-2 rounded-lg border bg-gray-100 text-gray-700 hover:bg-gray-200 border-transparent transition disabled:opacity-40 disabled:cursor-not-allowed"
+                            title="Undo (Ctrl/Cmd+Z)"
+                            aria-label="Undo"
+                          >
+                            <svg
+                              className="w-4 h-4"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M9 14L4 9l5-5"
+                              />
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M4 9h11a5 5 0 010 10h-1"
+                              />
+                            </svg>
+                          </button>
+                          <button
+                            onClick={handleRedo}
+                            disabled={!canRedo}
+                            className="p-2 rounded-lg border bg-gray-100 text-gray-700 hover:bg-gray-200 border-transparent transition disabled:opacity-40 disabled:cursor-not-allowed"
+                            title="Redo (Ctrl/Cmd+Shift+Z)"
+                            aria-label="Redo"
+                          >
+                            <svg
+                              className="w-4 h-4"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M15 14l5-5-5-5"
+                              />
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M20 9H9a5 5 0 000 10h1"
+                              />
+                            </svg>
+                          </button>
+                        </>
+                      )}
                       <DetailModeToggle detailMode={detailMode} onChange={setDetailMode} />
                       <button
                         className={`p-2 rounded-lg border transition ${isKaraoke ? 'bg-sky-100 text-sky-700 border-sky-300' : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border-transparent'}`}
